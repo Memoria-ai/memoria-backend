@@ -14,6 +14,7 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
+
 app.post('/gpt', async (req, res) => {
     const { message, max_tokens } = req.body;
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
