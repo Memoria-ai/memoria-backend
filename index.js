@@ -14,7 +14,6 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
-
 app.post('/gpt', async (req, res) => {
     const { message, max_tokens } = req.body;
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
@@ -28,12 +27,10 @@ app.post('/gpt', async (req, res) => {
             'Authorization': "Bearer " + process.env.REACT_APP_GPT_PRIVATE_KEY
         }
     });
-    // console.log(response.data)
-    // console.log(response)
-    console.log(response.data.choices[0].message.content)
-
+    console.log(response.data.choices[0].message.content);
     return res.json(response.data.choices[0].message.content);
 });
+
 
 app.listen(process.env.PORT || port, () => {
     console.log(`Server running`);
