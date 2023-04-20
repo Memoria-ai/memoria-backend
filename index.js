@@ -7,7 +7,9 @@ require('dotenv').config();
 const app = express();
 const port = 8000;
 
-app.use(cors()); // Add this line to enable CORS
+app.use(cors(
+    // test to see if it auto deploys
+)); // Add this line to enable CORS
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
