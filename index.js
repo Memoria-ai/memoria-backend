@@ -12,18 +12,16 @@ const port = 8000;
 
 const allowedOrigins = !process.env.PORT
   ? ['http://localhost:3000']
-  : ['https://memoria-ai.github.io'];
+  : ['https://memoria-ai.github.io', 'https://memoria-ai.github.io/home', 'https://memoria-ai.github.io/account'];
 
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (allowedOrigins.some((allowed) => origin.startsWith(allowed))) {
+        if (allowedOrigins.includes(origin)) {
           return callback(null, true);
+        } else {
+          return callback(new Error(`Origin ${origin} not allowed by CORS`));
         }
-        if (allowedOrigins.some((allowed) => origin.startsWith(allowed + '/'))) {
-          return callback(null, true);
-        }
-        return callback(new Error(`Origin ${origin} not allowed by CORS`));
       },
     })
   );
