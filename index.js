@@ -10,17 +10,12 @@ const app = express();
 const port = 8000;
 
 
-const allowedOrigins = ['https://memoria-ai.github.io', 'https://memoria-ai.github.io/home', 'https://memoria-ai.github.io/account', 'https://memoria-ai.github.io'];
+const allowedOrigins = ['https://memoria-ai.github.io'];
 
   app.use(
-    cors({
-      origin: (origin, callback) => {
-        if (allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        } else {
-          return callback(new Error(`Origin ${origin} not allowed by CORS ${allowedOrigins}}`));
-        }
-      },
+    cors({    
+        credentials: true,
+        origin: allowedOrigins
     })
   );
 app.use(bodyParser.json());
