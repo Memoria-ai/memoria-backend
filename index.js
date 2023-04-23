@@ -3,6 +3,7 @@ const cors = require('cors');
 const axios = require('axios');
 const bodyParser = require('body-parser');
 const { supabase } = require('./supabaseClient');
+const CryptoJS = require('crypto-js');
 require('dotenv').config();
 
 
@@ -12,22 +13,32 @@ const port = 8000;
 
 const allowedOrigins = ['https://memoria-ai.github.io'];
 const local = ['http://localhost:3000'];
-const current = allowedOrigins
+const current = allowedOrigins;
 app.use(bodyParser.json());
 
 // set no cors
 app.use(cors({
     // set no cors
-    origin: current
+    origin: local
 }));
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
+const encryptData = (data, secretKey) => {
+    const ciphertext = CryptoJS.AES.encrypt(data, secretKey).toString();
+    return ciphertext;
+  };
+  
+  // Function to decrypt data
+const decryptData = (ciphertext, secretKey) => {
+  const originalText = CryptoJS.AES.decrypt(ciphertext, secretKey).toString(CryptoJS.enc.Utf8);
+  return originalText;
+};
+
 app.post('/gpt', async (req, res) => {
     const { message, max_tokens } = req.body;
-
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
         model: "gpt-3.5-turbo",
         messages: [{role:'system', content:message}],
@@ -44,13 +55,12 @@ app.post('/gpt', async (req, res) => {
 });
 
 // database stuff
-
 app.post('/addNote', async (req, res) => {
     const { user_id, title, content } = req.body;
-
+    const encryptedContent = encryptData(content, process.env.REACT_APP_DECRYPTION_KEY);
     const { data, error } = await supabase
       .from('notes')
-      .insert({ user_id, title, content })
+      .insert({ user_id, title, content: encryptedContent })
       .single();
   
     if (error) {
@@ -66,12 +76,20 @@ app.post('/addNote', async (req, res) => {
       .from('notes')
       .select('*')
       .eq('user_id', userId);
-      
+  
     if (error) {
       console.log('Error fetching notes:', error);
       return null;
     } else {
-      return notes;
+      // Decrypt the data before returning it to the frontend
+      const decryptedNotes = notes.map(note => {
+        const decryptedContent = decryptData(note.content, process.env.REACT_APP_DECRYPTION_KEY);
+        return {
+          ...note,
+          content: decryptedContent,
+        };
+      });
+      return decryptedNotes;
     }
   };
 
