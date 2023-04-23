@@ -14,6 +14,12 @@ const allowedOrigins = ['https://memoria-ai.github.io'];
 
 app.use(bodyParser.json());
 
+// set no cors
+app.use(cors({
+    // set no cors
+    origin: allowedOrigins
+}));
+
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
