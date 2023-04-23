@@ -10,7 +10,6 @@ require('dotenv').config();
 const app = express();
 const port = 8000;
 
-
 const allowedOrigins = ['https://memoria-ai.github.io'];
 const local = ['http://localhost:3000'];
 const current = allowedOrigins;
@@ -58,9 +57,10 @@ app.post('/gpt', async (req, res) => {
 app.post('/addNote', async (req, res) => {
     const { user_id, title, content } = req.body;
     const encryptedContent = encryptData(content, process.env.REACT_APP_DECRYPTION_KEY);
+    const encryptedTitle = encryptData(title, process.env.REACT_APP_DECRYPTION_KEY);
     const { data, error } = await supabase
       .from('notes')
-      .insert({ user_id, title, content: encryptedContent })
+      .insert({ user_id, title:encryptedTitle, content: encryptedContent })
       .single();
   
     if (error) {
@@ -84,8 +84,10 @@ app.post('/addNote', async (req, res) => {
       // Decrypt the data before returning it to the frontend
       const decryptedNotes = notes.map(note => {
         const decryptedContent = decryptData(note.content, process.env.REACT_APP_DECRYPTION_KEY);
+        const decryptedTitle = decryptData(note.title, process.env.REACT_APP_DECRYPTION_KEY);
         return {
           ...note,
+            title: decryptedTitle,
           content: decryptedContent,
         };
       });
