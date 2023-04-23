@@ -19,7 +19,7 @@ app.use(bodyParser.json());
 // set no cors
 app.use(cors({
     // set no cors
-    origin: local
+    origin: current
 }));
 
 app.get('/', (req, res) => {
