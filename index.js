@@ -36,9 +36,6 @@ app.post('/gpt', async (req, res) => {
     return res.json(response.data.choices[0].message.content);
 });
 
-
-
-
 // database stuff
 
 app.post('/addNote', async (req, res) => {
