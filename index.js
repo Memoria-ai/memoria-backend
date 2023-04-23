@@ -13,10 +13,7 @@ const port = 8000;
 const allowedOrigins = ['https://memoria-ai.github.io'];
 
   app.use(
-    cors({    
-        credentials: true,
-        origin: allowedOrigins
-    })
+    cors({})
   );
 app.use(bodyParser.json());
 
