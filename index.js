@@ -10,9 +10,7 @@ const app = express();
 const port = 8000;
 
 
-const allowedOrigins = !process.env.PORT
-  ? ['http://localhost:3000']
-  : ['https://memoria-ai.github.io', 'https://memoria-ai.github.io/home', 'https://memoria-ai.github.io/account', 'https://memoria-ai.github.io'];
+const allowedOrigins = ['https://memoria-ai.github.io', 'https://memoria-ai.github.io/home', 'https://memoria-ai.github.io/account', 'https://memoria-ai.github.io'];
 
   app.use(
     cors({
