@@ -12,9 +12,7 @@ const port = 8000;
 
 const allowedOrigins = ['https://memoria-ai.github.io'];
 
-  app.use(
-    cors({})
-  );
+
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
