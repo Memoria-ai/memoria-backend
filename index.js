@@ -5,11 +5,8 @@ const bodyParser = require('body-parser');
 const { supabase } = require('./supabaseClient');
 const CryptoJS = require('crypto-js');
 require('dotenv').config();
-
-
 const app = express();
 const port = 8000;
-
 const server = ['https://memoria-ai.github.io'];
 const local = ['http://localhost:3000'];
 const current = server;
