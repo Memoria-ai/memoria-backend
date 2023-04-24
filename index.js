@@ -10,9 +10,9 @@ require('dotenv').config();
 const app = express();
 const port = 8000;
 
-const allowedOrigins = ['https://memoria-ai.github.io'];
+const server = ['https://memoria-ai.github.io'];
 const local = ['http://localhost:3000'];
-const current = allowedOrigins;
+const current = local;
 app.use(bodyParser.json());
 
 // set no cors
@@ -94,6 +94,38 @@ app.post('/addNote', async (req, res) => {
       return decryptedNotes;
     }
   };
+
+  function combineNotes(notes) {
+    let combinedString = "";
+    for (let note of notes) {
+      combinedString += note.title + "\n" + note.content + "\n\n";
+    }
+    return combinedString.trim();
+  }  
+
+  // queryUserThoughts
+  app.post('/queryUserThoughts', async (req, res) => {
+    const userId = req.body.userId;
+    const searchQuery = req.body.searchTerm;
+    const notes = await fetchUserNotes(userId);
+    const max_tokens = 200;
+    const message = "I am a bot that can help you remember your thoughts, and expand/answer questions about them. I can help you remember your thoughts by searching through your notes. You can ask me to search for a specific thought by typing 'search for' followed by your search query. For example, you can type 'search for my birthday', or 'what was the football idea I had'. Here are the notes: " + combineNotes(notes) + "";
+    const userMessage = "\n search query: " + searchQuery;
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: "gpt-3.5-turbo",
+      messages: [{role:'system', content:message}, {role:'user', content:userMessage}],
+      max_tokens: max_tokens,
+      n: 1,
+    }, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer " + process.env.REACT_APP_GPT_PRIVATE_KEY
+        }
+    });
+    console.log('there')
+    console.log(response.data.choices[0].message.content);
+    return res.json(response.data.choices[0].message.content);
+  });
 
   const deleteNote = async (id) => {
     const { data, error } = await supabase
