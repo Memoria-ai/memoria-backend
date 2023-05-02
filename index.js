@@ -7,8 +7,9 @@ const CryptoJS = require("crypto-js");
 require("dotenv").config();
 const app = express();
 const port = 8000;
-const server = ["https://memoria-ai.github.io"];
+const server = ["https://memoria-ai.github.io", "https://memoria-ai.github.io"];
 const local = ["http://localhost:3000"];
+
 const current = server;
 app.use(bodyParser.json());
 
