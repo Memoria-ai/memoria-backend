@@ -52,14 +52,14 @@ app.post('/gpt', async (req, res) => {
 
 // database stuff
 app.post('/addNote', async (req, res) => {
-    const { user_id, title, content } = req.body;
+    const { user_id, title, content, tags } = req.body;
     const encryptedContent = encryptData(content, process.env.REACT_APP_DECRYPTION_KEY);
     const encryptedTitle = encryptData(title, process.env.REACT_APP_DECRYPTION_KEY);
     const { data, error } = await supabase
       .from('notes')
-      .insert({ user_id, title:encryptedTitle, content: encryptedContent })
+      .insert({ user_id, title:encryptedTitle, content: encryptedContent, Tags:tags })
       .single();
-  
+
     if (error) {
       console.error(error);
       res.status(500).json({ error: 'Error inserting new note' });
@@ -86,6 +86,7 @@ app.post('/addNote', async (req, res) => {
           ...note,
             title: decryptedTitle,
           content: decryptedContent,
+            tags: note.Tags,
         };
       });
       return decryptedNotes;
@@ -124,6 +125,40 @@ app.post('/addNote', async (req, res) => {
     return res.json(response.data.choices[0].message.content);
   });
 
+  app.post('/addTags', async (req, res) => {
+    const tags = req.body.tags;
+    const user_id = req.body.userId; // assuming that the user ID is stored in the `req.user.id` property
+    const currentTags = await getCurrentTags(user_id);
+    const updatedTags = [...new Set([...(currentTags), ...(tags)])]; 
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update( {Tags: updatedTags} )
+      .eq('id', user_id);
+
+    if (updateError) {
+      console.error(updateError);
+      res.status(500).send('Error updating user profile');
+      return;
+    }
+    console.log('Tags updated successfully');
+    res.status(200).send('Tags updated successfully');
+  });
+
+  const getCurrentTags = async (userId) => {
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('Tags')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      console.error(profileError);
+      res.status(500).send('Error fetching user profile');
+      return;
+    }
+    const currentTags = profileData.Tags || [];
+    return currentTags
+  }
   const deleteNote = async (id) => {
     const { data, error } = await supabase
       .from('notes')
@@ -142,6 +177,13 @@ app.post('/addNote', async (req, res) => {
     const userId = req.body.userId;
     const notes = await fetchUserNotes(userId);
     res.send(notes);
+  });
+
+  app.post('/getUserTags', async (req, res) => {
+    const userId = req.body.userId;
+    console.log(userId);
+    const tags = await getCurrentTags(userId);
+    res.send(tags);
   });
   
   app.post('/deleteNote', async (req, res) => {
