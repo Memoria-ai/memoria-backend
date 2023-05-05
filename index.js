@@ -55,13 +55,13 @@ app.post("/gpt", async (req, res) => {
       },
     }
   );
-  console.log(response.data.choices[0].message.content);
+  // console.log(response.data.choices[0].message.content);
   return res.json(response.data.choices[0].message.content);
 });
 
 // database stuff
 app.post("/addNote", async (req, res) => {
-  const { user_id, title, content } = req.body;
+  const { user_id, title, content, tags } = req.body;
   const encryptedContent = encryptData(
     content,
     process.env.REACT_APP_DECRYPTION_KEY
@@ -72,7 +72,7 @@ app.post("/addNote", async (req, res) => {
   );
   const { data, error } = await supabase
     .from("notes")
-    .insert({ user_id, title: encryptedTitle, content: encryptedContent })
+    .insert({ user_id, title: encryptedTitle, content: encryptedContent, Tags: tags })
     .single();
 
   if (error) {
@@ -171,7 +171,7 @@ app.post("/queryUserThoughts", async (req, res) => {
       res.status(500).send('Error updating user profile');
       return;
     }
-    console.log('Tags updated successfully');
+    // console.log('Tags updated successfully');
     res.status(200).send('Tags updated successfully');
   });
 
@@ -191,17 +191,19 @@ app.post("/queryUserThoughts", async (req, res) => {
     return currentTags
   }
   const deleteNote = async (id) => {
-    const { data, error } = await supabase
-      .from('notes')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.log('Error deleting note:', error);
-      return null;
-    } else {
-      return data;
-    }
+    // 
+
+  const { data, error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.log('Error deleting note:', error);
+    return null;
+  } else {
+    return data;
+  }
   };
 
 app.post("/fetchUserNotes", async (req, res) => {
@@ -210,12 +212,12 @@ app.post("/fetchUserNotes", async (req, res) => {
   res.send(notes);
 });
 
-  app.post('/getUserTags', async (req, res) => {
-    const userId = req.body.userId;
-    console.log(userId);
-    const tags = await getCurrentTags(userId);
-    res.send(tags);
-  });
+app.post('/getUserTags', async (req, res) => {
+  const userId = req.body.userId;
+  // console.log(userId);
+  const tags = await getCurrentTags(userId);
+  res.send(tags);
+});
 
 app.post("/deleteNote", async (req, res) => {
   const id = req.body.id;
