@@ -10,7 +10,7 @@ const port = 8000;
 const server = ["https://memoria-ai.github.io", "https://memoria-ai.github.io"];
 const local = ["http://localhost:3000"];
 
-const current = local;
+const current = server;
 app.use(bodyParser.json());
 
 // set no cors
