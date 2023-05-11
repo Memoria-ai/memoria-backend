@@ -4,6 +4,9 @@ const axios = require("axios");
 const bodyParser = require("body-parser");
 const { supabase } = require("./supabaseClient");
 const CryptoJS = require("crypto-js");
+const multer = require("multer");
+const fs = require("fs");
+const FormData = require("form-data");
 require("dotenv").config();
 const app = express();
 const port = 8000;
@@ -12,7 +15,7 @@ const local = ["http://localhost:3000"];
 
 const current = server;
 app.use(bodyParser.json());
-
+const upload = multer();
 // set no cors
 app.use(
   cors({
@@ -223,6 +226,35 @@ app.post("/deleteNote", async (req, res) => {
   const id = req.body.id;
   const data = await deleteNote(id);
   res.send(data);
+});
+
+app.post('/audio', upload.single('audio'), async (req, res) => {
+  try {
+    const audioBlob = req.file.buffer;
+    const formData = new FormData();
+    formData.append('model', 'whisper-1');
+    formData.append('file', audioBlob, 'audio.wav');
+    
+    const whisperResponse = await axios.post(
+      'https://api.openai.com/v1/audio/transcriptions',
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.REACT_APP_GPT_PRIVATE_KEY}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+  
+    console.log(whisperResponse.data.text)
+    const transcript = whisperResponse.data.text;
+    res.setHeader('Content-Type', 'application/json');
+    res.json({ text: transcript });
+  } catch (error) {
+    console.error('There was an error:', error);
+    console.log(error.response.data)
+    res.status(500).json({ message: 'Error processing audio' });
+  }
 });
 
 app.listen(process.env.PORT || port, () => {
