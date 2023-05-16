@@ -117,6 +117,7 @@ const fetchUserNotes = async (userId) => {
         title: decryptedTitle,
         content: decryptedContent,
         tags: note.Tags,
+        timestamp: note.created_at // type timestampz
       };
     });
     return decryptedNotes;
@@ -126,7 +127,8 @@ const fetchUserNotes = async (userId) => {
 function combineNotes(notes) {
   let combinedString = "";
   for (let note of notes) {
-    combinedString += note.title + "\n" + note.content + "\n\n";
+    const dateOnlyString = new Date(note.timestamp).toISOString().slice(0, 10);
+    combinedString += "<Date>:" + dateOnlyString + "\n<Note>:" + note.content + "\n\n";
   }
   return combinedString.trim();
 }
@@ -134,22 +136,41 @@ function combineNotes(notes) {
 // queryUserThoughts
 app.post("/queryUserThoughts", async (req, res) => {
   const userId = req.body.userId;
-  const searchQuery = req.body.searchTerm;
+  const messages = req.body.messages;
   const notes = await fetchUserNotes(userId);
-  const max_tokens = 200;
-  const message =
-    "I am a bot that can help you remember your thoughts, and expand/answer questions about them. I can help you remember your thoughts by searching through your notes. You can ask me to search for a specific thought by typing 'search for' followed by your search query. For example, you can type 'search for my birthday', or 'what was the football idea I had'. Here are the notes: " +
-    combineNotes(notes) +
-    "";
-  const userMessage = "\n search query: " + searchQuery;
+  const max_tokens = 200; 
+  const currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
+  const system_message = // maybe here we can specify all the different kinds of user cases and give examples
+    "You will act as a bot that can help the user remember their thoughts, and expand/answer questions about them. \
+    You will help the user remember thoughts by searching through your notes. \
+    For example, you the user can ask 'search for my birthday', or 'what was the football idea I had'\
+    When answering questions that consider a date, use the following date as today: "
+    + currentDate + "\n\
+    Here are the notes: " +
+    combineNotes(notes);
+
+  const processed_messages = [];
+  for (let i = 0; i < messages.length; i++) {
+    const role = messages[i].role
+    const content = messages[i].text
+    const dict = { role, content };
+    processed_messages.push(dict);
+  }
+
+  const dict = {'role' : 'system', 'content' : system_message}
+  processed_messages.unshift(dict);
+
+  //console.log(req)
+  console.log('Printing processed_messages')
+  console.log(processed_messages);
+
   const response = await axios.post(
     "https://api.openai.com/v1/chat/completions",
     {
       model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: message },
-        { role: "user", content: userMessage },
-      ],
+      messages: processed_messages,
+      // messages: [{'role':'system','content': system_message},
+      //            {'role':'user','content':'how many notes do I have?'}],
       max_tokens: max_tokens,
       n: 1,
     },
@@ -160,7 +181,7 @@ app.post("/queryUserThoughts", async (req, res) => {
       },
     }
   );
-  console.log("there");
+  //console.log("there");
   console.log(response.data.choices[0].message.content);
   return res.json(response.data.choices[0].message.content);
 });
