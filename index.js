@@ -22,7 +22,8 @@ app.use(
   cors({
     // set no cors
     // origin: current,
-    origin: "https://memoria-ai.github.io",
+    // set no cors
+    origin: "*",
   })
 );
 
