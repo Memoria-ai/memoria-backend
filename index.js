@@ -13,7 +13,7 @@ const port = 8000;
 
 const server = ["https://memoria-ai.github.io"];
 const local = ["http://localhost:3000"];
-const current = server;
+// const current = server;
 
 app.use(bodyParser.json());
 const upload = multer();
