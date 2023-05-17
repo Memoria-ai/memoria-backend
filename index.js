@@ -20,10 +20,7 @@ const upload = multer();
 // set no cors
 app.use(
   cors({
-    // set no cors
-    // origin: current,
-    // set no cors
-    origin: "*",
+    origin: false // Set origin to false to disable CORS
   })
 );
 
