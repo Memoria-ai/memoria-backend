@@ -21,7 +21,8 @@ const upload = multer();
 app.use(
   cors({
     // set no cors
-    origin: current,
+    // origin: current,
+    origin: "https://memoria-ai.github.io",
   })
 );
 
