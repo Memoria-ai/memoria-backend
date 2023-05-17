@@ -151,6 +151,7 @@ app.post("/queryUserThoughts", async (req, res) => {
     combineNotes(notes);
 
   console.log("the messages are" + messages)
+  console.log(userId)
   console.log(req.body.messages)
   console.log(system_message)
 
