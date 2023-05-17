@@ -140,13 +140,13 @@ app.post("/queryUserThoughts", async (req, res) => {
   const messages = req.body.messages;
   const notes = await fetchUserNotes(userId);
   const max_tokens = 200; 
-  const currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
+  // const currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
   const system_message = // maybe here we can specify all the different kinds of user cases and give examples
     "You will act as a bot that can help the user remember their thoughts, and expand/answer questions about them. \
     You will help the user remember thoughts by searching through your notes. \
     For example, you the user can ask 'search for my birthday', or 'what was the football idea I had'\
     When answering questions that consider a date, use the following date as today: "
-    + currentDate + "\n\
+    + '2023-05-17' + "\n\
     Here are the notes: " +
     combineNotes(notes);
 
