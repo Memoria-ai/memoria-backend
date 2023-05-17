@@ -150,6 +150,7 @@ app.post("/queryUserThoughts", async (req, res) => {
     Here are the notes: " +
     combineNotes(notes);
 
+  console.log("the messages are" + messages)
   console.log(system_message)
 
   const processed_messages = [];
