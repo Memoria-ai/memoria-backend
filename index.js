@@ -21,7 +21,7 @@ const upload = multer();
 app.use(
   cors({
     origin: server,
-    
+
   })
 );
 
@@ -135,6 +135,7 @@ function combineNotes(notes) {
 
 // queryUserThoughts
 app.post("/queryUserThoughts", async (req, res) => {
+  console.log('starting queryUserThoughts')
   const userId = req.body.userId;
   const messages = req.body.messages;
   const notes = await fetchUserNotes(userId);
@@ -149,6 +150,8 @@ app.post("/queryUserThoughts", async (req, res) => {
     Here are the notes: " +
     combineNotes(notes);
 
+  console.log(system_message)
+
   const processed_messages = [];
   for (let i = 0; i < messages.length; i++) {
     const role = messages[i].role
@@ -160,6 +163,7 @@ app.post("/queryUserThoughts", async (req, res) => {
   const dict = {'role' : 'system', 'content' : system_message}
   processed_messages.unshift(dict);
 
+  console.log(processed_messages)
   //console.log(req)
   console.log('Printing processed_messages')
   console.log(processed_messages);
