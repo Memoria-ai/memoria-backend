@@ -128,7 +128,7 @@ function combineNotes(notes) {
   for (let note of notes) {
     const dateOnlyString = new Date(note.timestamp).toISOString().slice(0, 10);
     combinedString +=
-      "<Date>:" + dateOnlyString + "\n<Note>:" + note.content + "\n\n";
+      "Date:" + dateOnlyString + "\nNote:" + note.content + "\nTags" + note.tags.toString() +  "\n\n";
   }
   return combinedString.trim();
 }
@@ -140,16 +140,15 @@ app.post("/queryUserThoughts", async (req, res) => {
   const messages = req.body.messages;
   const notes = await fetchUserNotes(userId);
   const max_tokens = 200;
-  // const currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
+  const currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
   const system_message = // maybe here we can specify all the different kinds of user cases and give examples
-    "You will act as a bot that can help the user remember their thoughts, and expand/answer questions about them. \
-    You will help the user remember thoughts by searching through your notes. \
-    For example, you the user can ask 'search for my birthday', or 'what was the football idea I had'\
-    When answering questions that consider a date, use the following date as today: " +
-    "2023-05-17" +
-    "\n\
-    Here are the notes: " +
-    combineNotes(notes);
+    "You will act as a bot named Memoria that helps the user remember their thoughts and ideas, and expand and answer questions about them. \
+    Attempt to respond to the user queries based exclusively on the thoughts and ideas found in the text inside triple backticks,\
+    unless the user explicitly requests you to be creative or to generate new ideas. \
+    When answering questions that consider a date, use the following date as the current date: " + currentDate + ".\n" +
+    "When including dates in your responses, make the dates human-readable by specifying yesterday if the date is the day before the current date, \
+    or last week if the date was between 7 and 14 days before the current date.\n"+
+    "User thoughts: ```" + combineNotes(notes) + "```";
 
   console.log("the messages are" + messages);
   console.log(userId);
@@ -177,8 +176,6 @@ app.post("/queryUserThoughts", async (req, res) => {
     {
       model: "gpt-3.5-turbo",
       messages: processed_messages,
-      // messages: [{'role':'system','content': system_message},
-      //            {'role':'user','content':'how many notes do I have?'}],
       max_tokens: max_tokens,
       n: 1,
     },
