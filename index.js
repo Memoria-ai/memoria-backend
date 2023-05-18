@@ -21,7 +21,6 @@ const upload = multer();
 app.use(
   cors({
     origin: server,
-
   })
 );
 
@@ -117,7 +116,7 @@ const fetchUserNotes = async (userId) => {
         title: decryptedTitle,
         content: decryptedContent,
         tags: note.Tags,
-        timestamp: note.created_at // type timestampz
+        timestamp: note.created_at, // type timestampz
       };
     });
     return decryptedNotes;
@@ -128,47 +127,49 @@ function combineNotes(notes) {
   let combinedString = "";
   for (let note of notes) {
     const dateOnlyString = new Date(note.timestamp).toISOString().slice(0, 10);
-    combinedString += "<Date>:" + dateOnlyString + "\n<Note>:" + note.content + "\n\n";
+    combinedString +=
+      "<Date>:" + dateOnlyString + "\n<Note>:" + note.content + "\n\n";
   }
   return combinedString.trim();
 }
 
 // queryUserThoughts
 app.post("/queryUserThoughts", async (req, res) => {
-  console.log('starting queryUserThoughts')
+  console.log("starting queryUserThoughts");
   const userId = req.body.userId;
   const messages = req.body.messages;
   const notes = await fetchUserNotes(userId);
-  const max_tokens = 200; 
+  const max_tokens = 200;
   // const currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
   const system_message = // maybe here we can specify all the different kinds of user cases and give examples
     "You will act as a bot that can help the user remember their thoughts, and expand/answer questions about them. \
     You will help the user remember thoughts by searching through your notes. \
     For example, you the user can ask 'search for my birthday', or 'what was the football idea I had'\
-    When answering questions that consider a date, use the following date as today: "
-    + '2023-05-17' + "\n\
+    When answering questions that consider a date, use the following date as today: " +
+    "2023-05-17" +
+    "\n\
     Here are the notes: " +
     combineNotes(notes);
 
-  console.log("the messages are" + messages)
-  console.log(userId)
-  console.log(req.body.messages)
-  console.log(system_message)
+  console.log("the messages are" + messages);
+  console.log(userId);
+  console.log(req.body.messages);
+  console.log(system_message);
 
   const processed_messages = [];
   for (let i = 0; i < messages.length; i++) {
-    const role = messages[i].role
-    const content = messages[i].text
+    const role = messages[i].role;
+    const content = messages[i].text;
     const dict = { role, content };
     processed_messages.push(dict);
   }
 
-  const dict = {'role' : 'system', 'content' : system_message}
+  const dict = { role: "system", content: system_message };
   processed_messages.unshift(dict);
 
-  console.log(processed_messages)
+  console.log(processed_messages);
   //console.log(req)
-  console.log('Printing processed_messages')
+  console.log("Printing processed_messages");
   console.log(processed_messages);
 
   const response = await axios.post(
@@ -259,32 +260,32 @@ app.post("/deleteNote", async (req, res) => {
   res.send(data);
 });
 
-app.post('/audio', upload.single('audio'), async (req, res) => {
+app.post("/audio", upload.single("audio"), async (req, res) => {
   try {
     const audioBlob = req.file.buffer;
     const formData = new FormData();
-    formData.append('model', 'whisper-1');
-    formData.append('file', audioBlob, 'audio.wav');
-    
+    formData.append("model", "whisper-1");
+    formData.append("file", audioBlob, "audio.wav");
+
     const whisperResponse = await axios.post(
-      'https://api.openai.com/v1/audio/transcriptions',
+      "https://api.openai.com/v1/audio/transcriptions",
       formData,
       {
         headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_GPT_PRIVATE_KEY}`,
-          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${process.env.REACT_APP_GPT_PRIVATE_KEY}`,
+          "Content-Type": "multipart/form-data",
         },
-      },
+      }
     );
-  
-    console.log(whisperResponse.data.text)
+
+    console.log(whisperResponse.data.text);
     const transcript = whisperResponse.data.text;
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json({ text: transcript });
   } catch (error) {
-    console.error('There was an error:', error);
-    console.log(error.response.data)
-    res.status(500).json({ message: 'Error processing audio' });
+    console.error("There was an error:", error);
+    console.log(error.response.data);
+    res.status(500).json({ message: "Error processing audio" });
   }
 });
 
