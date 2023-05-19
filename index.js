@@ -20,7 +20,7 @@ const upload = multer();
 // set no cors
 app.use(
   cors({
-    origin: server,
+    origin: current,
   })
 );
 
@@ -128,7 +128,13 @@ function combineNotes(notes) {
   for (let note of notes) {
     const dateOnlyString = new Date(note.timestamp).toISOString().slice(0, 10);
     combinedString +=
-      "Date:" + dateOnlyString + "\nNote:" + note.content + "\nTags" + note.tags.toString() +  "\n\n";
+      "Date:" +
+      dateOnlyString +
+      "\nNote:" +
+      note.content +
+      "\nTags" +
+      note.tags.toString() +
+      "\n\n";
   }
   return combinedString.trim();
 }
@@ -145,10 +151,13 @@ app.post("/queryUserThoughts", async (req, res) => {
     "You will act as a bot named Memoria that helps the user remember their thoughts and ideas, and expand and answer questions about them. \
     Attempt to respond to the user queries based exclusively on the thoughts and ideas found in the text inside triple backticks,\
     unless the user explicitly requests you to be creative or to generate new ideas. \
-    When answering questions that consider a date, use the following date as the current date: " + currentDate + ".\n" +
+    When answering questions that consider a date, use the following date as the current date: " +
+    currentDate +
+    ".\n" +
     "When including dates in your responses, make the dates human-readable by specifying yesterday if the date is the day before the current date, \
-    or last week if the date was between 7 and 14 days before the current date.\n"+
-    "User thoughts: ```" + combineNotes(notes) + "```";
+    or last week if the date was between 7 and 14 days before the current date.\n" +
+    "User thoughts: " +
+    combineNotes(notes);
 
   console.log("the messages are" + messages);
   console.log(userId);
