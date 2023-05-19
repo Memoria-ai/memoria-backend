@@ -11,13 +11,13 @@ require("dotenv").config();
 const app = express();
 const port = 8000;
 
-const server = ["https://memoria.live", "https://www.memoria.live"];
+const server = ["https://memoria.live", "https://www.memoria.live", , "http://www.memoria.live", , "http://memoria.live"];
 const local = ["http://localhost:3000"];
 const current = server;
 
 app.use(bodyParser.json());
 const upload = multer();
-// set no cors
+// set no corsw
 app.use(
   cors({
     origin: current,
