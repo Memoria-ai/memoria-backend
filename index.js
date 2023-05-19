@@ -20,7 +20,7 @@ const upload = multer();
 // set no cors
 app.use(
   cors({
-    origin: current,
+    origin: server,
   })
 );
 
