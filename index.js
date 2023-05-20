@@ -14,7 +14,7 @@ const { configure_chatbot, identify_prompt_intent, resolve_prompt } = require('.
 
 const server = ["https://memoria.live", "https://www.memoria.live"];
 const local = ["http://localhost:3000"];
-const current = local;
+const current = server;
 
 app.use(bodyParser.json());
 const upload = multer();
