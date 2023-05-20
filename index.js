@@ -10,7 +10,11 @@ const FormData = require("form-data");
 require("dotenv").config();
 const app = express();
 const port = 8000;
-const { configure_chatbot, identify_prompt_intent, resolve_prompt } = require('./prompts');
+const {
+  configure_chatbot,
+  identify_prompt_intent,
+  resolve_prompt,
+} = require("./prompts");
 
 const server = [
   "https://memoria.live",
@@ -175,7 +179,7 @@ app.post("/queryUserThoughts", async (req, res) => {
 
   // console.log("Printing processed_messages");
   // console.log(processed_messages);
-  const response = await resolve_prompt(prompt_intent, processed_messages)
+  const response = await resolve_prompt(prompt_intent, processed_messages);
 
   console.log(response);
   return res.json(response);
