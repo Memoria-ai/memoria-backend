@@ -4,7 +4,7 @@ const chatGPT_model = "gpt-3.5-turbo";
 function configure_chatbot(notes) {
     let currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
     system_prompt = "You will act as a bot named Memoria that helps me remember my thoughts and ideas, and expand and answer questions about them. \
-    Attempt to respond to my queries based exclusively on the thoughts and ideas found in the text inside triple backticks,\
+    Attempt to respond to my queries based on the thoughts and ideas found in the text inside triple backticks,\
     unless I explicitly request you to be creative or to generate new ideas. \
     When answering questions that consider a date, use the following as the current date: " + currentDate + ".\n" +
     "User thoughts: ```" + combineNotes(notes) + "```";
@@ -57,14 +57,17 @@ async function resolve_prompt(intent, messages) {
 
 // this is a direct pure recall, that may be based on a date or period of time - we don't expect the model to be creative, just to reply
 async function recall_fact_from_thoughts(messages) {
-    system_prompt = "You will reply to my prompt by recalling from my thoughts provided earlier inside triple backticks. \
-    If only one thought matches my prompt, you will reply based on the Note: content of the thought.\
-    If multiple thoughts match my prompt, you will first summarize the Note: contents of all matching notes, and then append the following:\
+    system_prompt = "You will first reply the prompt based on my thoughts, and then recall \
+    the particular thoughts associated with the response that were provided earlier inside triple backticks. \
+    Count how many thoughts are associated with the prompt. If more than 1 thought matches the prompt,\
+    only reference the 3 most recent thoughts.\
+    The response should look like this:\
+    Prompt response\n Associated notes:\
     Date: date_here | Note: note_content\n\
     Date: date_here | Note: note_content\n\
     ...\
     Date: date_here | Note: note_content\n\
-    When providing dates, you will convert them based on these rules: \
+    When providing dates in your response, you will convert them based on these rules: \
     If date is equal to the current date, use 'Today'.\
     If date is equal to the day previous to the current date, use 'Yesterday'.\
     If date falls in the week previous the current date, use 'Last Week'.\
