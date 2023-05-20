@@ -40,18 +40,18 @@ async function identify_prompt_intent(user_prompt) {
     return response
 }
 
-function resolve_prompt(intent, messages) {
+async function resolve_prompt(intent, messages) {
     switch(intent) {
         case "recall":
-            return recall_fact_from_thoughts(messages)
+            return await recall_fact_from_thoughts(messages)
         case "summarize":
-            return summarize_thoughts(messages)
+            return await summarize_thoughts(messages)
         case "imagine":
-            return imagine(messages)  
+            return await imagine(messages)  
         case "other":
-            return catch_all(messages)
+            return await catch_all(messages)
         default:
-            return catch_all(messages)
+            return await catch_all(messages)
     }
 }
 
@@ -71,9 +71,11 @@ async function recall_fact_from_thoughts(messages) {
     If fate falls in the month previous to the current date, use 'Last Month'.\
     For any other dates, you may use the format: Month-Day-Year";
     const dict = {role: "system", content: system_prompt}
-    let full_messages = messages.splice(messages.length - 1, 0, dict) // this adds a message that talks to the ear of chatGPT without the user knowing, right before their last prompt
+    const temp = messages.pop();
+    messages.push(dict)
+    messages.push(temp)
     console.log("Calling recall_fact_from_thoughts");
-    response = await call_chatGPT(full_messages, 2000, 0);
+    response = await call_chatGPT(messages, 2000, 0);
     return response
 }
 
@@ -81,18 +83,22 @@ async function summarize_thoughts(messages) {
     system_prompt = "You will summarize the thoughts that match my prompt. Only inlude the Note: content of the thoughts, \
     and do not include the Dates unless the prompt specifies this explictly";
     const dict = {role: "system", content: system_prompt}
-    let full_messages = messages.splice(messages.length - 1, 0, dict) // this adds a message that talks to the ear of chatGPT without the user knowing, right before their last prompt
+    const temp = messages.pop();
+    messages.push(dict)
+    messages.push(temp)
     console.log("Calling summarize_thoughts");
-    response = await call_chatGPT(full_messages, 2000, 0);
+    response = await call_chatGPT(messages, 2000, 0);
     return response
 }
 
 async function imagine(messages) {
     system_prompt = "You will review all thoughts related to my prompt, and brainstorm ideas that relate to these thoughts. Be creative, but make the brainstorm ideas feasible";
     const dict = {role: "system", content: system_prompt}
-    let full_messages = messages.splice(messages.length - 1, 0, dict) // this adds a message that talks to the ear of chatGPT without the user knowing, right before their last prompt
+    const temp = messages.pop();
+    messages.push(dict)
+    messages.push(temp)
     console.log("Calling imagine");
-    response = await call_chatGPT(full_messages, 2000, 0.8);
+    response = await call_chatGPT(messages, 2000, 0.8);
     return response
 }
 
@@ -121,7 +127,9 @@ async function call_chatGPT(messages, max_tokens, temperature=0) {
             Authorization: "Bearer " + process.env.REACT_APP_GPT_PRIVATE_KEY,
           },
         }
-      );
+      ).catch(error => {
+        console.error('Error:', error.response.data.error);
+      });
     return response.data.choices[0].message.content
 }
 

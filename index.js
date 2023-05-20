@@ -150,12 +150,12 @@ app.post("/queryUserThoughts", async (req, res) => {
   const max_tokens = 200;
   let system_message = configure_chatbot(notes);
   let last_prompt = messages[messages.length - 1].text;
-  let prompt_intent = identify_prompt_intent(last_prompt);
+  let prompt_intent = await identify_prompt_intent(last_prompt);
 
-  console.log("the messages are" + messages);
+  //console.log("the messages are" + messages);
   console.log(userId);
   console.log(req.body.messages);
-  console.log(system_message);
+  //console.log(system_message);
 
   let processed_messages = [];
   for (let i = 0; i < messages.length; i++) {
@@ -168,9 +168,9 @@ app.post("/queryUserThoughts", async (req, res) => {
   const dict = { role: "system", content: system_message };
   processed_messages.unshift(dict);
 
-  console.log("Printing processed_messages");
-  console.log(processed_messages);
-  const response = resolve_prompt(prompt_intent, processed_messages)
+  // console.log("Printing processed_messages");
+  // console.log(processed_messages);
+  const response = await resolve_prompt(prompt_intent, processed_messages)
 
   console.log(response);
   return res.json(response);
