@@ -68,16 +68,17 @@ async function resolve_prompt(intent, messages) {
 // this is a direct pure recall, that may be based on a date or period of time - we don't expect the model to be creative, just to reply
 async function recall_fact_from_thoughts(messages) {
   system_prompt =
-    "You will first reply the prompt based on my thoughts, and then recall \
+    "You will first reply the prompt based on my thoughts, and then reference \
     the particular thoughts associated with the response that were provided earlier inside triple backticks. \
     Count how many thoughts are associated with the prompt. If more than 1 thought matches the prompt,\
     only reference the 3 most recent thoughts.\
-    The response should look like this:\
-    Prompt response\n --Associated notes--\n\
-    Date here: Note content here\n\
-    Date here: Note content here\n\
+    The response should look like this:\n\
+    Prompt response\n\
+    --Associated notes--\n\
+    Date: Note\n\
+    Date: Note\n\
     ...\
-    Date here: Note content here\n\
+    Date: Note\n\
     When providing dates in your response, you will convert them based on these rules: \
     If date is equal to the current date, use 'Today'.\
     If date is equal to the day previous to the current date, use 'Yesterday'.\
