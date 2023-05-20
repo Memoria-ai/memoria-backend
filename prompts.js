@@ -73,11 +73,11 @@ async function recall_fact_from_thoughts(messages) {
     Count how many thoughts are associated with the prompt. If more than 1 thought matches the prompt,\
     only reference the 3 most recent thoughts.\
     The response should look like this:\
-    Prompt response\n --Associated notes--\
-    Date: Note content\n\
-    Date: Note content\n\
+    Prompt response\n --Associated notes--\n\
+    Date here: Note content here\n\
+    Date here: Note content here\n\
     ...\
-    Date: Note content\n\
+    Date here: Note content here\n\
     When providing dates in your response, you will convert them based on these rules: \
     If date is equal to the current date, use 'Today'.\
     If date is equal to the day previous to the current date, use 'Yesterday'.\
