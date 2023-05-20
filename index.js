@@ -10,6 +10,7 @@ const FormData = require("form-data");
 require("dotenv").config();
 const app = express();
 const port = 8000;
+const { configure_chatbot, identify_prompt_intent, resolve_prompt } = require('./prompts');
 
 const server = ["https://memoria.live", "https://www.memoria.live", "http://www.memoria.live", "http://memoria.live"];
 const local = ["http://localhost:3000"];
@@ -123,6 +124,7 @@ const fetchUserNotes = async (userId) => {
   }
 };
 
+//TODO delete this
 function combineNotes(notes) {
   let combinedString = "";
   for (let note of notes) {
@@ -146,25 +148,16 @@ app.post("/queryUserThoughts", async (req, res) => {
   const messages = req.body.messages;
   const notes = await fetchUserNotes(userId);
   const max_tokens = 200;
-  const currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
-  const system_message = // maybe here we can specify all the different kinds of user cases and give examples
-    "You will act as a bot named Memoria that helps the user remember their thoughts and ideas, and expand and answer questions about them. \
-    Attempt to respond to the user queries based exclusively on the thoughts and ideas found in the text inside triple backticks,\
-    unless the user explicitly requests you to be creative or to generate new ideas. \
-    When answering questions that consider a date, use the following date as the current date: " +
-    currentDate +
-    ".\n" +
-    "When including dates in your responses, make the dates human-readable by specifying yesterday if the date is the day before the current date, \
-    or last week if the date was between 7 and 14 days before the current date.\n" +
-    "User thoughts: " +
-    combineNotes(notes);
+  let system_message = configure_chatbot(notes);
+  let last_prompt = messages[messages.length - 1].text;
+  let prompt_intent = await identify_prompt_intent(last_prompt);
 
-  console.log("the messages are" + messages);
+  //console.log("the messages are" + messages);
   console.log(userId);
   console.log(req.body.messages);
-  console.log(system_message);
+  //console.log(system_message);
 
-  const processed_messages = [];
+  let processed_messages = [];
   for (let i = 0; i < messages.length; i++) {
     const role = messages[i].role;
     const content = messages[i].text;
@@ -175,29 +168,12 @@ app.post("/queryUserThoughts", async (req, res) => {
   const dict = { role: "system", content: system_message };
   processed_messages.unshift(dict);
 
-  console.log(processed_messages);
-  //console.log(req)
-  console.log("Printing processed_messages");
-  console.log(processed_messages);
+  // console.log("Printing processed_messages");
+  // console.log(processed_messages);
+  const response = await resolve_prompt(prompt_intent, processed_messages)
 
-  const response = await axios.post(
-    "https://api.openai.com/v1/chat/completions",
-    {
-      model: "gpt-3.5-turbo",
-      messages: processed_messages,
-      max_tokens: max_tokens,
-      n: 1,
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + process.env.REACT_APP_GPT_PRIVATE_KEY,
-      },
-    }
-  );
-  //console.log("there");
-  console.log(response.data.choices[0].message.content);
-  return res.json(response.data.choices[0].message.content);
+  console.log(response);
+  return res.json(response);
 });
 
 app.post("/addTags", async (req, res) => {
