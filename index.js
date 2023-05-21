@@ -1,9 +1,11 @@
 const express = require("express");
+const session = require("express-session")
 const cors = require("cors");
 const axios = require("axios");
 const bodyParser = require("body-parser");
 const { supabase } = require("./supabaseClient");
 const CryptoJS = require("crypto-js");
+const crypto = require('crypto');
 const multer = require("multer");
 const fs = require("fs");
 const FormData = require("form-data");
@@ -23,7 +25,7 @@ const server = [
   "http://memoria.live",
 ];
 const local = ["http://localhost:3000"];
-const current = server;
+const current = local;
 // 
 app.use(bodyParser.json());
 const upload = multer();
@@ -31,8 +33,16 @@ const upload = multer();
 app.use(
   cors({
     origin: current,
+    credentials: true
   })
 );
+
+const secretKey = crypto.randomBytes(32).toString('hex')
+app.use(session({
+  secret: secretKey,
+  resave: false,
+  saveUninitialized: true
+}));
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -98,9 +108,12 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
     const audioBlob = req.file.buffer;
     const formData = new FormData();
     formData.append("model", "whisper-1");
-    formData.append("file", audioBlob, "audio.wav");
+    formData.append("file", audioBlob, "audio.mp3");
 
     const whisperResponse = await makeAudioTranscriptionRequest(formData);
+
+    // Store the parameter value in the session
+    req.session.recording = audioBlob;
 
     const transcript = whisperResponse.data.text;
     res.setHeader("Content-Type", "application/json");
@@ -149,6 +162,23 @@ app.post("/addNote", async (req, res) => {
     title,
     process.env.REACT_APP_DECRYPTION_KEY
   );
+
+  console.log("Retreiving recording and uploading to db")
+  // console.log("What's in session var:")
+  // console.log(req.session)
+  const recording = req.session.recording;
+  const recording_name = 'Thought Recordings/recording_'+ encryptedTitle +'.mp3';
+  if(recording){ //only save recording if it's found in the session
+    const { data, error } = await supabase.storage
+    .from('User Resources')
+    .upload(recording_name, recording, {
+      cacheControl: '3600', // Optional cache control settings
+    });
+    console.log("Recording uploaded: " + recording_name);
+    console.log(data);
+    console.error(error);
+  }
+
   const { data, error } = await supabase
     .from("notes")
     .insert({
