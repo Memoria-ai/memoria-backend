@@ -302,8 +302,12 @@ const getAllTags = async (userId) => {
     // Decrypt the data before returning it to the frontend
     let tags = []
     notes.map((note) => {
-      for (let tag of note.Tags) {
-        tags.push(tag);
+      if(!note.Tags){
+        console.log("no tags")
+      }else{
+        for (let tag of note.Tags) {
+          tags.push(tag);
+        }
       }
     });
     return tags;
