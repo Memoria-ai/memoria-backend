@@ -75,7 +75,8 @@ async function makeChatRequest(req, res) {
   } catch (error) {
     console.error("Error:", error);
     await sleep(1000);
-    return makeChatRequest(req, res);
+    // return makeChatRequest(req, res);
+    return;
   }
 }
 
@@ -127,7 +128,8 @@ async function makeAudioTranscriptionRequest(formData) {
   } catch (error) {
     console.error("Error:", error);
     await sleep(1000); // Wait for 1 second before retrying
-    return makeAudioTranscriptionRequest(formData); // Retry the request
+    // return makeAudioTranscriptionRequest(formData); // Retry the request
+    return;
   }
 }
 
