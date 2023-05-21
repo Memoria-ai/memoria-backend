@@ -51,82 +51,81 @@ const decryptData = (ciphertext, secretKey) => {
   return originalText;
 };
 
-
 async function makeChatRequest(req, res) {
   const { message, max_tokens } = req.body;
 
   try {
     const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
+      "https://api.openai.com/v1/chat/completions",
       {
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'system', content: message }],
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "system", content: message }],
         max_tokens: max_tokens,
         n: 1,
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + process.env.REACT_APP_GPT_PRIVATE_KEY,
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + process.env.REACT_APP_GPT_PRIVATE_KEY,
         },
       }
     );
 
     return res.json(response.data.choices[0].message.content);
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
     await sleep(1000);
-    return makeChatRequest(req, res); 
+    return makeChatRequest(req, res);
   }
 }
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-app.post('/gpt', async (req, res) => {
+app.post("/gpt", async (req, res) => {
   try {
     await makeChatRequest(req, res);
   } catch (error) {
-    console.error('Error:', error);
-    return res.status(500).json({ error: 'An error occurred' });
+    console.error("Error:", error);
+    return res.status(500).json({ error: "An error occurred" });
   }
 });
 
-app.post('/audio', upload.single('audio'), async (req, res) => {
+app.post("/audio", upload.single("audio"), async (req, res) => {
   try {
     const audioBlob = req.file.buffer;
     const formData = new FormData();
-    formData.append('model', 'whisper-1');
-    formData.append('file', audioBlob, 'audio.wav');
+    formData.append("model", "whisper-1");
+    formData.append("file", audioBlob, "audio.wav");
 
     const whisperResponse = await makeAudioTranscriptionRequest(formData);
 
     const transcript = whisperResponse.data.text;
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json({ text: transcript });
   } catch (error) {
-    console.error('There was an error:', error);
-    res.status(500).json({ message: 'Error processing audio' });
+    console.error("There was an error:", error);
+    res.status(500).json({ message: "Error processing audio" });
   }
 });
 
 async function makeAudioTranscriptionRequest(formData) {
   try {
     const response = await axios.post(
-      'https://api.openai.com/v1/audio/transcriptions',
+      "https://api.openai.com/v1/audio/transcriptions",
       formData,
       {
         headers: {
           Authorization: `Bearer ${process.env.REACT_APP_GPT_PRIVATE_KEY}`,
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       }
     );
 
     return response;
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
     await sleep(1000); // Wait for 1 second before retrying
     return makeAudioTranscriptionRequest(formData); // Retry the request
   }
@@ -134,9 +133,8 @@ async function makeAudioTranscriptionRequest(formData) {
 
 // Helper function to pause execution for a given duration
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
 
 // database stuff
 app.post("/addNote", async (req, res) => {
@@ -227,7 +225,6 @@ app.post("/queryUserThoughts", async (req, res) => {
   let last_prompt = messages[messages.length - 1].text;
   let prompt_intent = await identify_prompt_intent(last_prompt);
 
-
   let processed_messages = [];
   for (let i = 0; i < messages.length; i++) {
     const role = messages[i].role;
@@ -300,11 +297,11 @@ const getAllTags = async (userId) => {
     return null;
   } else {
     // Decrypt the data before returning it to the frontend
-    let tags = []
+    let tags = [];
     notes.map((note) => {
-      if(!note.Tags){
-        console.log("no tags")
-      }else{
+      if (!note.Tags) {
+        console.log("no tags");
+      } else {
         for (let tag of note.Tags) {
           tags.push(tag);
         }
@@ -315,7 +312,6 @@ const getAllTags = async (userId) => {
 };
 
 const getDict = (tags) => {
-  
   const counts = {};
   tags.forEach((tag) => {
     // Remove leading and trailing single quotation marks
@@ -330,7 +326,7 @@ const getDict = (tags) => {
 
 const sendNewTags = async (userId, tags) => {
   const orderedData = [];
-  
+
   const { error: updateError } = await supabase
     .from("profiles")
     .update({ tags_new: tags })
@@ -341,10 +337,10 @@ const sendNewTags = async (userId, tags) => {
     return;
   }
 
-  while(Object.keys(tags).length > 0) {
+  while (Object.keys(tags).length > 0) {
     let maxKey = null;
     let maxValue = -Infinity;
-  
+
     for (const key in tags) {
       if (tags[key] > maxValue) {
         maxValue = tags[key];
@@ -356,31 +352,31 @@ const sendNewTags = async (userId, tags) => {
   }
 
   const { error: updateError2 } = await supabase
-  .from("profiles")
-  .update({ Tags: orderedData })
-  .eq("id", userId);
+    .from("profiles")
+    .update({ Tags: orderedData })
+    .eq("id", userId);
 
   if (updateError2) {
-    console.error('second error:' + updateError);
+    console.error("second error:" + updateError);
     return;
   }
   return orderedData;
-  };
+};
 
-  const updateTags = async (userId) => {
-    const tags = await getAllTags(userId);
-    const counts = {};
-    tags.forEach((tag) => {
-      // Remove leading and trailing single quotation marks
-      if (counts[tag] === undefined) {
-        counts[tag] = 1;
-      } else {
-        counts[tag] += 1;
-      }
-    });
-    const newTags = await sendNewTags(userId, counts);
-    return newTags;
-  };
+const updateTags = async (userId) => {
+  const tags = await getAllTags(userId);
+  const counts = {};
+  tags.forEach((tag) => {
+    // Remove leading and trailing single quotation marks
+    if (counts[tag] === undefined) {
+      counts[tag] = 1;
+    } else {
+      counts[tag] += 1;
+    }
+  });
+  const newTags = await sendNewTags(userId, counts);
+  return newTags;
+};
 
 app.post("/fetchUserNotes", async (req, res) => {
   const userId = req.body.userId;
@@ -393,7 +389,7 @@ app.post("/getUserTags", async (req, res) => {
   const tags = await getCurrentTags(userId);
   const tagsFull = await getAllTags(userId);
   const tagsAndCounts = getDict(tagsFull);
-  res.send({tags: tags, counts: tagsAndCounts});
+  res.send({ tags: tags, counts: tagsAndCounts });
 });
 
 app.post("/deleteNote", async (req, res) => {
@@ -403,8 +399,6 @@ app.post("/deleteNote", async (req, res) => {
   const newTags = await updateTags(userId);
   res.send(newTags);
 });
-
-
 
 app.listen(process.env.PORT || port, () => {
   console.log(`Server running`);
