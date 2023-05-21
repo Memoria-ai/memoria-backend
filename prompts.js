@@ -19,7 +19,7 @@ function configure_chatbot(notes) {
 function combineNotes(notes) {
   let combinedString = "";
   for (let note of notes) {
-    const dateOnlyString = new Date(note?.timestamp).toISOString().slice(0, 10);
+    const dateOnlyString = new Date(note?.timestamp).toISOString().slice(0, 10); //toLocaleDateString() is better formatting IMO -mc
     combinedString +=
       "Date: " +
       dateOnlyString +
