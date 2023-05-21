@@ -25,6 +25,7 @@ const server = [
 const local = ["http://localhost:3000"];
 const current = server;
 
+
 app.use(bodyParser.json());
 const upload = multer();
 // set no corsw
