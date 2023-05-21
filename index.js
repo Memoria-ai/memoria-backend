@@ -68,7 +68,6 @@ app.post("/gpt", async (req, res) => {
       },
     }
   );
-  // console.log(response.data.choices[0].message.content);
   return res.json(response.data.choices[0].message.content);
 });
 
@@ -97,6 +96,7 @@ app.post("/addNote", async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Error inserting new note" });
   } else {
+    const newTags = await updateTags(user_id);
     res.status(200).json(data);
   }
 });
@@ -152,7 +152,6 @@ function combineNotes(notes) {
 
 // queryUserThoughts
 app.post("/queryUserThoughts", async (req, res) => {
-  console.log("starting queryUserThoughts");
   const userId = req.body.userId;
   const messages = req.body.messages;
   const notes = await fetchUserNotes(userId);
@@ -161,10 +160,6 @@ app.post("/queryUserThoughts", async (req, res) => {
   let last_prompt = messages[messages.length - 1].text;
   let prompt_intent = await identify_prompt_intent(last_prompt);
 
-  //console.log("the messages are" + messages);
-  console.log(userId);
-  console.log(req.body.messages);
-  //console.log(system_message);
 
   let processed_messages = [];
   for (let i = 0; i < messages.length; i++) {
@@ -177,8 +172,6 @@ app.post("/queryUserThoughts", async (req, res) => {
   const dict = { role: "system", content: system_message };
   processed_messages.unshift(dict);
 
-  // console.log("Printing processed_messages");
-  // console.log(processed_messages);
   const response = await resolve_prompt(prompt_intent, processed_messages);
 
   console.log(response);
@@ -200,7 +193,6 @@ app.post("/addTags", async (req, res) => {
     res.status(500).send("Error updating user profile");
     return;
   }
-  // console.log('Tags updated successfully');
   res.status(200).send("Tags updated successfully");
 });
 
@@ -221,7 +213,6 @@ const getCurrentTags = async (userId) => {
 };
 const deleteNote = async (id) => {
   //
-
   const { data, error } = await supabase.from("notes").delete().eq("id", id);
 
   if (error) {
@@ -231,6 +222,94 @@ const deleteNote = async (id) => {
     return data;
   }
 };
+const getAllTags = async (userId) => {
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.log("Error fetching Tags:", error);
+    return null;
+  } else {
+    // Decrypt the data before returning it to the frontend
+    let tags = []
+    notes.map((note) => {
+      for (let tag of note.Tags) {
+        tags.push(tag);
+      }
+    });
+    return tags;
+  }
+};
+
+const getDict = (tags) => {
+  
+  const counts = {};
+  tags.forEach((tag) => {
+    // Remove leading and trailing single quotation marks
+    if (counts[tag] === undefined) {
+      counts[tag] = 1;
+    } else {
+      counts[tag] += 1;
+    }
+  });
+  return counts;
+};
+
+const sendNewTags = async (userId, tags) => {
+  const orderedData = [];
+  
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({ tags_new: tags })
+    .eq("id", userId);
+
+  if (updateError) {
+    console.error(updateError);
+    return;
+  }
+
+  while(Object.keys(tags).length > 0) {
+    let maxKey = null;
+    let maxValue = -Infinity;
+  
+    for (const key in tags) {
+      if (tags[key] > maxValue) {
+        maxValue = tags[key];
+        maxKey = key;
+      }
+    }
+    orderedData.push(maxKey);
+    delete tags[maxKey];
+  }
+
+  const { error: updateError2 } = await supabase
+  .from("profiles")
+  .update({ Tags: orderedData })
+  .eq("id", userId);
+
+  if (updateError2) {
+    console.error('second error:' + updateError);
+    return;
+  }
+  return orderedData;
+  };
+
+  const updateTags = async (userId) => {
+    const tags = await getAllTags(userId);
+    const counts = {};
+    tags.forEach((tag) => {
+      // Remove leading and trailing single quotation marks
+      if (counts[tag] === undefined) {
+        counts[tag] = 1;
+      } else {
+        counts[tag] += 1;
+      }
+    });
+    const newTags = await sendNewTags(userId, counts);
+    return newTags;
+  };
 
 app.post("/fetchUserNotes", async (req, res) => {
   const userId = req.body.userId;
@@ -240,15 +319,18 @@ app.post("/fetchUserNotes", async (req, res) => {
 
 app.post("/getUserTags", async (req, res) => {
   const userId = req.body.userId;
-  // console.log(userId);
   const tags = await getCurrentTags(userId);
-  res.send(tags);
+  const tagsFull = await getAllTags(userId);
+  const tagsAndCounts = getDict(tagsFull);
+  res.send({tags: tags, counts: tagsAndCounts});
 });
 
 app.post("/deleteNote", async (req, res) => {
   const id = req.body.id;
+  const userId = req.body.userId;
   const data = await deleteNote(id);
-  res.send(data);
+  const newTags = await updateTags(userId);
+  res.send(newTags);
 });
 
 app.post("/audio", upload.single("audio"), async (req, res) => {
@@ -269,13 +351,11 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
       }
     );
 
-    console.log(whisperResponse.data.text);
     const transcript = whisperResponse.data.text;
     res.setHeader("Content-Type", "application/json");
     res.json({ text: transcript });
   } catch (error) {
     console.error("There was an error:", error);
-    console.log(error.response.data);
     res.status(500).json({ message: "Error processing audio" });
   }
 });
