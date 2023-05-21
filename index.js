@@ -51,25 +51,92 @@ const decryptData = (ciphertext, secretKey) => {
   return originalText;
 };
 
-app.post("/gpt", async (req, res) => {
+
+async function makeChatRequest(req, res) {
   const { message, max_tokens } = req.body;
-  const response = await axios.post(
-    "https://api.openai.com/v1/chat/completions",
-    {
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "system", content: message }],
-      max_tokens: max_tokens,
-      n: 1,
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + process.env.REACT_APP_GPT_PRIVATE_KEY,
+
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'system', content: message }],
+        max_tokens: max_tokens,
+        n: 1,
       },
-    }
-  );
-  return res.json(response.data.choices[0].message.content);
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + process.env.REACT_APP_GPT_PRIVATE_KEY,
+        },
+      }
+    );
+
+    return res.json(response.data.choices[0].message.content);
+  } catch (error) {
+    console.error('Error:', error);
+    await sleep(1000);
+    return makeChatRequest(req, res); 
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+app.post('/gpt', async (req, res) => {
+  try {
+    await makeChatRequest(req, res);
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({ error: 'An error occurred' });
+  }
 });
+
+app.post('/audio', upload.single('audio'), async (req, res) => {
+  try {
+    const audioBlob = req.file.buffer;
+    const formData = new FormData();
+    formData.append('model', 'whisper-1');
+    formData.append('file', audioBlob, 'audio.wav');
+
+    const whisperResponse = await makeAudioTranscriptionRequest(formData);
+
+    const transcript = whisperResponse.data.text;
+    res.setHeader('Content-Type', 'application/json');
+    res.json({ text: transcript });
+  } catch (error) {
+    console.error('There was an error:', error);
+    res.status(500).json({ message: 'Error processing audio' });
+  }
+});
+
+async function makeAudioTranscriptionRequest(formData) {
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/audio/transcriptions',
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.REACT_APP_GPT_PRIVATE_KEY}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    console.error('Error:', error);
+    await sleep(1000); // Wait for 1 second before retrying
+    return makeAudioTranscriptionRequest(formData); // Retry the request
+  }
+}
+
+// Helper function to pause execution for a given duration
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 
 // database stuff
 app.post("/addNote", async (req, res) => {
@@ -333,32 +400,7 @@ app.post("/deleteNote", async (req, res) => {
   res.send(newTags);
 });
 
-app.post("/audio", upload.single("audio"), async (req, res) => {
-  try {
-    const audioBlob = req.file.buffer;
-    const formData = new FormData();
-    formData.append("model", "whisper-1");
-    formData.append("file", audioBlob, "audio.wav");
 
-    const whisperResponse = await axios.post(
-      "https://api.openai.com/v1/audio/transcriptions",
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.REACT_APP_GPT_PRIVATE_KEY}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-
-    const transcript = whisperResponse.data.text;
-    res.setHeader("Content-Type", "application/json");
-    res.json({ text: transcript });
-  } catch (error) {
-    console.error("There was an error:", error);
-    res.status(500).json({ message: "Error processing audio" });
-  }
-});
 
 app.listen(process.env.PORT || port, () => {
   console.log(`Server running`);
