@@ -141,7 +141,9 @@ async function makeAudioTranscriptionRequest(formData) {
 
     return response;
   } catch (error) {
+    console.log(error.data.error)
     console.error("Error:", error);
+    
     await sleep(1000); // Wait for 1 second before retrying
     // return makeAudioTranscriptionRequest(formData); // Retry the request
     return;
