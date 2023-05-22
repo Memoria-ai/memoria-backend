@@ -25,7 +25,7 @@ const server = [
   "http://memoria.live",
 ];
 const local = ["http://localhost:3000"];
-const current = local;
+const current = server;
 // 
 app.use(bodyParser.json());
 const upload = multer();
