@@ -166,17 +166,20 @@ app.post("/addNote", async (req, res) => {
   console.log("Retreiving recording and uploading to db")
   // console.log("What's in session var:")
   // console.log(req.session)
-  const recording = req.session.recording;
-  const recording_name = 'Thought Recordings/recording_'+ encryptedTitle +'.mp3';
+  const recording = Buffer.from(req.session.recording);
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 8);
+  const recording_name = 'thought_recordings/' + user_id + '/recording_'+ timestamp + randomString +'.mp3';
   if(recording){ //only save recording if it's found in the session
     const { data, error } = await supabase.storage
-    .from('User Resources')
+    .from('resources')
     .upload(recording_name, recording, {
-      cacheControl: '3600', // Optional cache control settings
+      cacheControl: '3600', 
+      contentType: 'audio/mp3'
     });
     console.log("Recording uploaded: " + recording_name);
     console.log(data);
-    console.error(error);
+    //console.error(error);
   }
 
   const { data, error } = await supabase
@@ -186,6 +189,7 @@ app.post("/addNote", async (req, res) => {
       title: encryptedTitle,
       content: encryptedContent,
       Tags: tags,
+      thought_recording: recording_name
     })
     .single();
 
@@ -224,6 +228,7 @@ const fetchUserNotes = async (userId) => {
         content: decryptedContent,
         tags: note.Tags,
         timestamp: note.created_at, // type timestampz
+        thought_recording: note.thought_recording // supabase path
       };
     });
     return decryptedNotes;
@@ -430,6 +435,36 @@ app.post("/deleteNote", async (req, res) => {
   const data = await deleteNote(id);
   const newTags = await updateTags(userId);
   res.send(newTags);
+});
+
+app.post("/fetchNoteAudio", async (req, res) => {
+  const path = req.body.path;
+  console.log("Fetching note from path: " + path)
+  // console.log("Fetching note from path: ...")
+  try {
+    const { data, error } = await supabase.storage
+      .from('resources')
+      .download(path);
+
+    if (error) {
+      console.error(error);
+      res.sendStatus(500);
+      return;
+    }
+
+    // Set the appropriate headers for audio playback
+    res.set({
+      'Content-Type': 'audio/mp3',
+      'Content-Disposition': 'inline'
+    });
+
+    // Pipe the audio data to the response
+    console.log("Note audio found, sending to frontend...")
+    res.send(data);
+  } catch (error) {
+    console.error(error);
+    res.sendStatus(500);
+  }
 });
 
 app.listen(process.env.PORT || port, () => {

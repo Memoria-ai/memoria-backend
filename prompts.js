@@ -66,7 +66,8 @@ async function resolve_prompt(intent, messages) {
 }
 
 // this is a direct pure recall, that may be based on a date or period of time - we don't expect the model to be creative, just to reply
-async function recall_fact_from_thoughts(messages) {
+async function recall_fact_from_thoughts(messages) { // Harsh feedback: reference all thoughts or only 3? summarize the older ones? ask GTP for most relevant?
+                                                    // if no thoughts were related to query, reply X
   system_prompt =
     "You will first reply the prompt based on my thoughts, and then reference \
     the particular thoughts associated with the response that were provided earlier inside triple backticks. \
@@ -107,7 +108,7 @@ async function summarize_thoughts(messages) {
   return response;
 }
 
-async function imagine(messages) {
+async function imagine(messages) { // Harsh: make explicit that there's information beyond what you've explicitly provided, and coming from external sources
   system_prompt =
     "You will review all thoughts related to my prompt, and brainstorm ideas that relate to these thoughts. Be creative, but make the brainstorm ideas feasible";
   const dict = { role: "system", content: system_prompt };
