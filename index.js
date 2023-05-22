@@ -108,7 +108,7 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
     const audioBlob = req.file.buffer;
     const formData = new FormData();
     formData.append("model", "whisper-1");
-    formData.append("file", audioBlob, "audio.mp3");
+    formData.append("file", audioBlob, "audio.wav");
 
     const whisperResponse = await makeAudioTranscriptionRequest(formData);
 
