@@ -126,7 +126,7 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
 });
 
 async function makeAudioTranscriptionRequest(formData) {
-  console.log(formData.get("file"));
+
   try {
     const response = await axios.post(
       "https://api.openai.com/v1/audio/transcriptions",
