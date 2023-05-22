@@ -114,7 +114,7 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
 
     // Store the parameter value in the session
     req.session.recording = audioBlob;
-
+    console.log(whisperResponse)
     const transcript = whisperResponse.data.text;
     res.setHeader("Content-Type", "application/json");
     res.json({ text: transcript });
