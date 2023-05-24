@@ -32,8 +32,14 @@ const upload = multer();
 // set no corsw
 app.use(
   cors({
-    origin: current,
-    credentials: true
+    credentials: true,
+    origin: function (origin, callback) {
+      if (!origin || current.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
   })
 );
 
