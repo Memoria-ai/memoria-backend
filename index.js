@@ -175,26 +175,26 @@ app.post("/addNote", async (req, res) => {
   );
 
   let recording_name = null;
-  if(req.session.recording != null){
-    console.log("Retreiving recording and uploading to db")
-    // console.log("What's in session var:")
-    // console.log(req.session)
-    const recording = Buffer.from(req.session.recording);
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 8);
-    recording_name = 'thought_recordings/' + user_id + '/recording_'+ timestamp + randomString +'.mp3';
-    if(recording){ //only save recording if it's found in the session
-      const { data, error } = await supabase.storage
-      .from('resources')
-      .upload(recording_name, recording, {
-        cacheControl: '3600', 
-        contentType: 'audio/mp3'
-      });
-      console.log("Recording uploaded: " + recording_name);
-      console.log(data);
-      //console.error(error);
-    }
-  } 
+  // if(req.session.recording != null){
+  //   console.log("Retreiving recording and uploading to db")
+  //   // console.log("What's in session var:")
+  //   // console.log(req.session)
+  //   const recording = Buffer.from(req.session.recording);
+  //   const timestamp = Date.now();
+  //   const randomString = Math.random().toString(36).substring(2, 8);
+  //   recording_name = 'thought_recordings/' + user_id + '/recording_'+ timestamp + randomString +'.mp3';
+  //   if(recording){ //only save recording if it's found in the session
+  //     const { data, error } = await supabase.storage
+  //     .from('resources')
+  //     .upload(recording_name, recording, {
+  //       cacheControl: '3600', 
+  //       contentType: 'audio/mp3'
+  //     });
+  //     console.log("Recording uploaded: " + recording_name);
+  //     console.log(data);
+  //     //console.error(error);
+  //   }
+  // } 
 
   const { data, error } = await supabase
     .from("notes")
