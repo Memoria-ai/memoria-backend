@@ -37,12 +37,12 @@ app.use(
   })
 );
 
-const secretKey = crypto.randomBytes(32).toString('hex')
-app.use(session({
-  secret: secretKey,
-  resave: false,
-  saveUninitialized: true
-}));
+// const secretKey = crypto.randomBytes(32).toString('hex')
+// app.use(session({
+//   secret: secretKey,
+//   resave: false,
+//   saveUninitialized: true
+// }));
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
