@@ -28,7 +28,8 @@ const local = ["http://localhost:3000"];
 const current = server;
 // 
 app.use(bodyParser.json());
-const upload = multer();
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 // set no corsw
 app.use(
   cors({
