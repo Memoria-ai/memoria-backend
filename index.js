@@ -29,7 +29,7 @@ const current = server;
 // 
 app.use(bodyParser.json());
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer();
 // set no corsw
 app.use(
   cors({
