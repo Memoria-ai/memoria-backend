@@ -150,10 +150,10 @@ async function call_chatGPT(messages, max_tokens, temperature = 0) {
     .catch((error) => {
       console.error("Error:", error.response.data.error);
     });
-  if(response.data.choices[0].message.content){
-    return response.data.choices[0].message.content;
-  }
-  return ''
+    if (typeof response.data !== 'undefined') {
+      return response.data.choices[0].message.content;
+    }
+    return '';
   
 }
 
