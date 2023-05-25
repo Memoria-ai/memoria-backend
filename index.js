@@ -7,8 +7,10 @@ const { supabase } = require("./supabaseClient");
 const CryptoJS = require("crypto-js");
 const crypto = require('crypto');
 const multer = require("multer");
+const { Deepgram } = require("@deepgram/sdk");
 const fs = require("fs");
 const FormData = require("form-data");
+const { Readable } = require('stream');
 require("dotenv").config();
 const app = express();
 const port = 8000;
@@ -17,6 +19,7 @@ const {
   identify_prompt_intent,
   resolve_prompt,
 } = require("./prompts");
+const deepgram = new Deepgram(process.env.voice_key);
 
 const server = [
   "https://memoria.live",
@@ -157,6 +160,33 @@ async function makeAudioTranscriptionRequest(formData) {
     return;
   }
 }
+
+app.post('/transcribe', upload.single('audio'), async (req, res) => {
+  try {
+    const audioSource = {
+      stream: Readable.from(req.file.buffer),
+      mimetype: req.file.mimetype,
+    };
+
+    const response = await deepgram.transcription.preRecorded(audioSource, {
+      punctuate: true,
+      // other options are available
+    });
+    // const transcription = response.results.channels[0].reduce((text, segment) => {
+    //   return text + segment.alternatives[0].transcript;
+    // }, '');
+    // console.log('Transcription:', transcription);
+    // console.log(response.results.channels[0])
+    // console.log(response.results.channels[0].alternatives)
+    const transcription = response.results.channels[0].alternatives[0].transcript
+    res.json({ transcription: transcription });
+  } catch (error) {
+    console.log('Error:', error.message);
+    res.status(500).json({ error: 'An error occurred during transcription' });
+  }
+});
+
+
 
 // Helper function to pause execution for a given duration
 function sleep(ms) {
