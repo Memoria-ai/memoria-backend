@@ -86,13 +86,15 @@ async function makeChatRequest(req, res) {
         },
       }
     );
-
-    return res.json(response.data.choices[0].message.content);
+    if(response.data.choices[0].message.content){
+      return res.json(response.data.choices[0].message.content);
+    }
+    return ''
   } catch (error) {
     console.error("Error:", error);
     await sleep(1000);
     // return makeChatRequest(req, res);
-    return;
+    return '';
   }
 }
 
