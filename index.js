@@ -120,7 +120,7 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
     console.log("the audioblob is" + audioBlob)
     const formData = new FormData();
 
-    formData.append("file", audioBlob, "audio.mp4");
+    formData.append("file", audioBlob, "audio.mp3");
     formData.append("model", "whisper-1");
 
     const whisperResponse = await makeAudioTranscriptionRequest(formData);
@@ -173,12 +173,6 @@ app.post('/transcribe', upload.single('audio'), async (req, res) => {
       punctuate: true,
       // other options are available
     });
-    // const transcription = response.results.channels[0].reduce((text, segment) => {
-    //   return text + segment.alternatives[0].transcript;
-    // }, '');
-    // console.log('Transcription:', transcription);
-    // console.log(response.results.channels[0])
-    // console.log(response.results.channels[0].alternatives)
     const transcription = response.results.channels[0].alternatives[0].transcript
     res.json({ transcription: transcription });
   } catch (error) {
