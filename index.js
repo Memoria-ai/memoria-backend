@@ -1,16 +1,16 @@
 const express = require("express");
-const session = require("express-session")
+const session = require("express-session");
 const cors = require("cors");
 const axios = require("axios");
 const bodyParser = require("body-parser");
 const { supabase } = require("./supabaseClient");
 const CryptoJS = require("crypto-js");
-const crypto = require('crypto');
+const crypto = require("crypto");
 const multer = require("multer");
 const { Deepgram } = require("@deepgram/sdk");
 const fs = require("fs");
 const FormData = require("form-data");
-const { Readable } = require('stream');
+const { Readable } = require("stream");
 require("dotenv").config();
 const app = express();
 const port = 8000;
@@ -29,31 +29,26 @@ const server = [
 ];
 const local = ["http://localhost:3000"];
 const current = server;
-// 
+//
 app.use(bodyParser.json());
 // const storage = multer.memoryStorage();
 const upload = multer();
 // set no corsw
 app.use(
   cors({
+    origin: current,
     credentials: true,
-    origin: function (origin, callback) {
-      if (!origin || current.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    }
   })
 );
 
-// const secretKey = crypto.randomBytes(32).toString('hex')
-// app.use(session({
-//   secret: secretKey,
-//   resave: false,
-//   saveUninitialized: true
-// }));
-// 
+const secretKey = crypto.randomBytes(32).toString("hex");
+app.use(
+  session({
+    secret: secretKey,
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -116,10 +111,8 @@ app.post("/gpt", async (req, res) => {
 
 app.post("/audio", upload.single("audio"), async (req, res) => {
   try {
-    const buffer = req.file.buffer;
-    // making the buffer into a blob
-    const audioBlob = new Blob([buffer], { type: "audio/mp3" });
-    console.log("the audioblob is" + audioBlob)
+    const audioBlob = req.file.buffer;
+    console.log("the audioblob is" + audioBlob);
     const formData = new FormData();
 
     formData.append("file", audioBlob, "audio.mp3");
@@ -129,7 +122,7 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
 
     // Store the parameter value in the session
     //req.session.recording = audioBlob;
-    console.log(whisperResponse)
+    console.log(whisperResponse);
     const transcript = whisperResponse.data.text;
     res.setHeader("Content-Type", "application/json");
     res.json({ text: transcript });
@@ -140,7 +133,6 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
 });
 
 async function makeAudioTranscriptionRequest(formData) {
-
   try {
     const response = await axios.post(
       "https://api.openai.com/v1/audio/transcriptions",
@@ -155,16 +147,16 @@ async function makeAudioTranscriptionRequest(formData) {
 
     return response;
   } catch (error) {
-    console.log(error.response.data.error)
+    console.log(error.response.data.error);
     console.error("Error:", error);
-    
+
     await sleep(1000); // Wait for 1 second before retrying
     // return makeAudioTranscriptionRequest(formData); // Retry the request
     return;
   }
 }
 
-app.post('/transcribe', upload.single('audio'), async (req, res) => {
+app.post("/transcribe", upload.single("audio"), async (req, res) => {
   try {
     const audioSource = {
       stream: Readable.from(req.file.buffer),
@@ -175,15 +167,14 @@ app.post('/transcribe', upload.single('audio'), async (req, res) => {
       punctuate: true,
       // other options are available
     });
-    const transcription = response.results.channels[0].alternatives[0].transcript
+    const transcription =
+      response.results.channels[0].alternatives[0].transcript;
     res.json({ transcription: transcription });
   } catch (error) {
-    console.log('Error:', error.message);
-    res.status(500).json({ error: 'An error occurred during transcription' });
+    console.log("Error:", error.message);
+    res.status(500).json({ error: "An error occurred during transcription" });
   }
 });
-
-
 
 // Helper function to pause execution for a given duration
 function sleep(ms) {
@@ -203,26 +194,33 @@ app.post("/addNote", async (req, res) => {
   );
 
   let recording_name = null;
-  // if(req.session.recording != null){
-  //   console.log("Retreiving recording and uploading to db")
-  //   // console.log("What's in session var:")
-  //   // console.log(req.session)
-  //   const recording = Buffer.from(req.session.recording);
-  //   const timestamp = Date.now();
-  //   const randomString = Math.random().toString(36).substring(2, 8);
-  //   recording_name = 'thought_recordings/' + user_id + '/recording_'+ timestamp + randomString +'.mp3';
-  //   if(recording){ //only save recording if it's found in the session
-  //     const { data, error } = await supabase.storage
-  //     .from('resources')
-  //     .upload(recording_name, recording, {
-  //       cacheControl: '3600', 
-  //       contentType: 'audio/mp3'
-  //     });
-  //     console.log("Recording uploaded: " + recording_name);
-  //     console.log(data);
-  //     //console.error(error);
-  //   }
-  // } 
+  if (req.session.recording != null) {
+    console.log("Retreiving recording and uploading to db");
+    // console.log("What's in session var:")
+    // console.log(req.session)
+    const recording = Buffer.from(req.session.recording);
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 8);
+    recording_name =
+      "thought_recordings/" +
+      user_id +
+      "/recording_" +
+      timestamp +
+      randomString +
+      ".mp3";
+    if (recording) {
+      //only save recording if it's found in the session
+      const { data, error } = await supabase.storage
+        .from("resources")
+        .upload(recording_name, recording, {
+          cacheControl: "3600",
+          contentType: "audio/mp3",
+        });
+      console.log("Recording uploaded: " + recording_name);
+      console.log(data);
+      //console.error(error);
+    }
+  }
 
   const { data, error } = await supabase
     .from("notes")
@@ -231,7 +229,7 @@ app.post("/addNote", async (req, res) => {
       title: encryptedTitle,
       content: encryptedContent,
       Tags: tags,
-      thought_recording: recording_name
+      thought_recording: recording_name,
     })
     .single();
 
@@ -270,7 +268,7 @@ const fetchUserNotes = async (userId) => {
         content: decryptedContent,
         tags: note.Tags,
         timestamp: note.created_at, // type timestampz
-        thought_recording: note.thought_recording // supabase path
+        thought_recording: note.thought_recording, // supabase path
       };
     });
     return decryptedNotes;
@@ -354,6 +352,7 @@ const getCurrentTags = async (userId) => {
   const currentTags = profileData.Tags || [];
   return currentTags;
 };
+
 const deleteNote = async (id) => {
   //
   const { data, error } = await supabase.from("notes").delete().eq("id", id);
@@ -378,9 +377,7 @@ const getAllTags = async (userId) => {
     // Decrypt the data before returning it to the frontend
     let tags = [];
     notes.map((note) => {
-      if (!note.Tags) {
-        console.log("no tags");
-      } else {
+      if (note.Tags) {
         for (let tag of note.Tags) {
           tags.push(tag);
         }
@@ -457,6 +454,50 @@ const updateTags = async (userId) => {
   return newTags;
 };
 
+const fetchNumQueries = async (userId) => {
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("num_queries")
+    .eq("id", userId)
+    .single();
+
+  if (profileError) {
+    console.error(profileError);
+    res.status(500).send("Error fetching user profile");
+    return;
+  }
+
+  const numQueries = profileData.num_queries;
+  return numQueries;
+};
+
+app.post("/fetchNumQueries", async (req, res) => {
+  const userId = req.body.userId;
+  const num_queries = await fetchNumQueries(userId);
+  res.send(num_queries.toString());
+});
+
+const incrNumQueries = async (userId) => {
+  console.log("incrNumQueries called");
+
+  const cur_queries = await fetchNumQueries(userId);
+
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({ num_queries: cur_queries + 1 })
+    .eq("id", userId);
+
+  if (updateError) {
+    console.error(updateError);
+    return;
+  }
+};
+
+app.post("/incrNumQueries", async (req) => {
+  const userId = req.body.userId;
+  await incrNumQueries(userId);
+});
+
 app.post("/fetchUserNotes", async (req, res) => {
   const userId = req.body.userId;
   const notes = await fetchUserNotes(userId);
@@ -481,11 +522,11 @@ app.post("/deleteNote", async (req, res) => {
 
 app.post("/fetchNoteAudio", async (req, res) => {
   const path = req.body.path;
-  console.log("Fetching note from path: " + path)
+  console.log("Fetching note from path: " + path);
   // console.log("Fetching note from path: ...")
   try {
     const { data, error } = await supabase.storage
-      .from('resources')
+      .from("resources")
       .download(path);
 
     if (error) {
@@ -496,12 +537,12 @@ app.post("/fetchNoteAudio", async (req, res) => {
 
     // Set the appropriate headers for audio playback
     res.set({
-      'Content-Type': 'audio/mp3',
-      'Content-Disposition': 'inline'
+      "Content-Type": "audio/mp3",
+      "Content-Disposition": "inline",
     });
 
     // Pipe the audio data to the response
-    console.log("Note audio found, sending to frontend...")
+    console.log("Note audio found, sending to frontend...");
     res.send(data);
   } catch (error) {
     console.error(error);
