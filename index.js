@@ -171,10 +171,7 @@ app.post('/transcribe', upload.single('audio'), async (req, res) => {
       mimetype: req.file.mimetype,
     };
 
-    const response = await deepgram.transcription.preRecorded(audioSource, {
-      punctuate: true,
-      // other options are available
-    });
+    const response = await deepgram.transcription.preRecorded(audioSource, {punctuate: true, model: 'nova', language: 'en-US' });
     const transcription = response.results.channels[0].alternatives[0].transcript
     res.json({ transcription: transcription });
   } catch (error) {
