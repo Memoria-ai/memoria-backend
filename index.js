@@ -28,7 +28,7 @@ const server = [
   "http://memoria.live",
 ];
 const local = ["http://localhost:3000"];
-const current = server;
+const current = local;
 // 
 app.use(bodyParser.json());
 // const storage = multer.memoryStorage();
@@ -116,7 +116,9 @@ app.post("/gpt", async (req, res) => {
 
 app.post("/audio", upload.single("audio"), async (req, res) => {
   try {
-    const audioBlob = req.file.buffer;
+    const buffer = req.file.buffer;
+    // making the buffer into a blob
+    const audioBlob = new Blob([buffer], { type: "audio/mp3" });
     console.log("the audioblob is" + audioBlob)
     const formData = new FormData();
 
