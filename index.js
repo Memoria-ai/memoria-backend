@@ -58,7 +58,7 @@ const encryptData = (data, secretKey) => {
   const ciphertext = CryptoJS.AES.encrypt(data, secretKey).toString();
   return ciphertext;
 };
-
+// 
 // Function to decrypt data
 const decryptData = (ciphertext, secretKey) => {
   const originalText = CryptoJS.AES.decrypt(ciphertext, secretKey).toString(
