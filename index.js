@@ -460,9 +460,10 @@ const fetchNumQueries = async (userId) => {
     .single();
 
   if (profileError) {
-    console.error(profileError);
-    res.status(500).send("Error fetching user profile");
-    return;
+    // console.error(profileError);
+    // res.status(500).send("Error fetching user profile");
+    console.log('profileError')
+    return 0;
   }
 
   const numQueries = profileData.num_queries;
