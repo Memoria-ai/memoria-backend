@@ -551,6 +551,8 @@ app.post("/fetchNoteAudio", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || port, () => {
+const server2 = app.listen(process.env.PORT || port, () => {
   console.log(`Server running`);
 });
+
+server2.setTimeout(60000)
