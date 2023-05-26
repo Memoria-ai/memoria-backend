@@ -555,4 +555,4 @@ const server2 = app.listen(process.env.PORT || port, () => {
   console.log(`Server running`);
 });
 
-server2.setTimeout(60000)
+server2.setTimeout(200000)
