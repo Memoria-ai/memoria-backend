@@ -45,8 +45,8 @@ async function identify_prompt_intent(user_prompt) {
     "```";
   const messages = [{ role: "user", content: prompt }];
   response = await call_chatGPT(messages, 10, 0);
-  console.log("Identifying prompt intent for: " + user_prompt);
-  console.log("chatGTP response to prompt intent: " + response);
+  // console.log("Identifying prompt intent for: " + user_prompt);
+  // console.log("chatGTP response to prompt intent: " + response);
   return response;
 }
 
@@ -91,7 +91,7 @@ async function recall_fact_from_thoughts(messages) { // Harsh feedback: referenc
   const temp = messages.pop();
   messages.push(dict);
   messages.push(temp);
-  console.log("Calling recall_fact_from_thoughts");
+  // console.log("Calling recall_fact_from_thoughts");
   response = await call_chatGPT(messages, 2000, 0);
   return response;
 }
@@ -104,7 +104,7 @@ async function summarize_thoughts(messages) {
   const temp = messages.pop();
   messages.push(dict);
   messages.push(temp);
-  console.log("Calling summarize_thoughts");
+  // console.log("Calling summarize_thoughts");
   response = await call_chatGPT(messages, 2000, 0);
   return response;
 }
@@ -116,14 +116,14 @@ async function imagine(messages) { // Harsh: make explicit that there's informat
   const temp = messages.pop();
   messages.push(dict);
   messages.push(temp);
-  console.log("Calling imagine");
+  // console.log("Calling imagine");
   response = await call_chatGPT(messages, 2000, 0.8);
   return response;
 }
 
 // this is the catch all response to prompts, use high temp to make the model be creative
 async function catch_all(messages) {
-  console.log("Calling catch_all");
+  // console.log("Calling catch_all");
   response = await call_chatGPT(messages, 2000, 0.2);
   return response;
 }
@@ -131,8 +131,8 @@ async function catch_all(messages) {
 //TODO add more use cases here
 
 async function call_chatGPT(messages, max_tokens, temperature = 0) {
-  console.log("Calling chatGPT with the following prompt:");
-  console.log(messages);
+  // console.log("Calling chatGPT with the following prompt:");
+  // console.log(messages);
   const response = await axios
     .post(
       "https://api.openai.com/v1/chat/completions",
