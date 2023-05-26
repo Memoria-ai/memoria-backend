@@ -490,11 +490,13 @@ const incrNumQueries = async (userId) => {
     console.error(updateError);
     return;
   }
+  return cur_queries + 1;
 };
 
 app.post("/incrNumQueries", async (req) => {
   const userId = req.body.userId;
-  await incrNumQueries(userId);
+  const num = await incrNumQueries(userId);
+  res.send(num.toString());
 });
 
 app.post("/fetchUserNotes", async (req, res) => {
