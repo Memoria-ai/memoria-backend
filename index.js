@@ -19,8 +19,11 @@ const {
   identify_prompt_intent,
   resolve_prompt,
 } = require("./prompts");
+const {
+  getEmbeddings,
+} = require('./embeddings')
 const deepgram = new Deepgram(process.env.voice_key);
-// 
+//
 const server = [
   "https://memoria.live",
   "https://www.memoria.live",
@@ -28,7 +31,7 @@ const server = [
   "http://memoria.live",
 ];
 const local = ["http://localhost:3000"];
-const current = server;
+const current = local;
 //
 app.use(bodyParser.json());
 // const storage = multer.memoryStorage();
@@ -41,6 +44,7 @@ app.use(
   })
 );
 
+
 const secretKey = crypto.randomBytes(32).toString("hex");
 app.use(
   session({
@@ -50,15 +54,17 @@ app.use(
   })
 );
 
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
 
 const encryptData = (data, secretKey) => {
   const ciphertext = CryptoJS.AES.encrypt(data, secretKey).toString();
   return ciphertext;
 };
-// 
+//
 // Function to decrypt data
 const decryptData = (ciphertext, secretKey) => {
   const originalText = CryptoJS.AES.decrypt(ciphertext, secretKey).toString(
@@ -67,8 +73,10 @@ const decryptData = (ciphertext, secretKey) => {
   return originalText;
 };
 
+
 async function makeChatRequest(req, res) {
   const { message, max_tokens } = req.body;
+
 
   try {
     const response = await axios.post(
@@ -98,9 +106,11 @@ async function makeChatRequest(req, res) {
   }
 }
 
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
 
 app.post("/gpt", async (req, res) => {
   try {
@@ -111,16 +121,20 @@ app.post("/gpt", async (req, res) => {
   }
 });
 
+
 app.post("/audio", upload.single("audio"), async (req, res) => {
   try {
     const audioBlob = req.file.buffer;
     console.log("the audioblob is" + audioBlob);
     const formData = new FormData();
 
+
     formData.append("file", audioBlob, "audio.mp3");
     formData.append("model", "whisper-1");
 
+
     const whisperResponse = await makeAudioTranscriptionRequest(formData);
+
 
     // Store the parameter value in the session
     //req.session.recording = audioBlob;
@@ -133,6 +147,7 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
     res.status(500).json({ message: "Error processing audio" });
   }
 });
+
 
 async function makeAudioTranscriptionRequest(formData) {
   try {
@@ -147,10 +162,12 @@ async function makeAudioTranscriptionRequest(formData) {
       }
     );
 
+
     return response;
   } catch (error) {
     console.log(error.response.data.error);
     console.error("Error:", error);
+
 
     await sleep(1000); // Wait for 1 second before retrying
     // return makeAudioTranscriptionRequest(formData); // Retry the request
@@ -158,12 +175,14 @@ async function makeAudioTranscriptionRequest(formData) {
   }
 }
 
+
 app.post("/transcribe", upload.single("audio"), async (req, res) => {
   try {
     const audioSource = {
       stream: Readable.from(req.file.buffer),
       mimetype: req.file.mimetype,
     };
+
 
     const response = await deepgram.transcription.preRecorded(audioSource, {punctuate: true, model: 'nova', language: 'en-US' });
     const transcription = response.results.channels[0].alternatives[0].transcript;
@@ -174,10 +193,12 @@ app.post("/transcribe", upload.single("audio"), async (req, res) => {
   }
 });
 
+
 // Helper function to pause execution for a given duration
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
 
 // database stuff
 app.post("/addNote", async (req, res) => {
@@ -190,7 +211,9 @@ app.post("/addNote", async (req, res) => {
     title,
     process.env.REACT_APP_DECRYPTION_KEY
   );
-
+ 
+  const embedding = await getEmbeddings(content);
+  console.log(embedding)
   let recording_name = null;
   if (req.session.recording != null) {
     console.log("Retreiving recording and uploading to db");
@@ -220,6 +243,7 @@ app.post("/addNote", async (req, res) => {
     }
   }
 
+
   const { data, error } = await supabase
     .from("notes")
     .insert({
@@ -228,8 +252,10 @@ app.post("/addNote", async (req, res) => {
       content: encryptedContent,
       Tags: tags,
       thought_recording: recording_name,
+      embedding: embedding,
     })
     .single();
+
 
   if (error) {
     console.error(error);
@@ -240,18 +266,20 @@ app.post("/addNote", async (req, res) => {
   }
 });
 
+
 const fetchUserNotes = async (userId) => {
   const { data: notes, error } = await supabase
     .from("notes")
     .select("*")
     .eq("user_id", userId);
 
+
   if (error) {
     console.log("Error fetching notes:", error);
     return null;
   } else {
     // Decrypt the data before returning it to the frontend
-    const decryptedNotes = notes.map((note) => {
+    const decryptedNotes = await Promise.all(notes.map(async (note) => {
       const decryptedContent = decryptData(
         note.content,
         process.env.REACT_APP_DECRYPTION_KEY
@@ -260,6 +288,33 @@ const fetchUserNotes = async (userId) => {
         note.title,
         process.env.REACT_APP_DECRYPTION_KEY
       );
+      if (note && note.embedding) {
+        // console.log("Note has embeddings")
+        return {
+          ...note,
+          title: decryptedTitle,
+          content: decryptedContent,
+          tags: note.Tags,
+          timestamp: note.created_at, // type timestampz
+          thought_recording: note.thought_recording, // supabase path
+          embeddings: note.embedding,
+          id: note.id,
+        };
+      }
+      // Create the embedding if there is no embedding
+      const embeddings = await getEmbeddings(decryptedContent);
+
+
+      const { data, error } = await supabase
+        .from("notes")
+        .update({
+          embedding: embeddings,
+        })
+        .eq("id", note.id)
+        .single();
+      if(error) {
+        console.log("Error updating embedding:", error);
+      }
       return {
         ...note,
         title: decryptedTitle,
@@ -267,11 +322,13 @@ const fetchUserNotes = async (userId) => {
         tags: note.Tags,
         timestamp: note.created_at, // type timestampz
         thought_recording: note.thought_recording, // supabase path
+        embedding: embeddings,
       };
-    });
+    }));
     return decryptedNotes;
   }
 };
+
 
 //TODO delete this
 function combineNotes(notes) {
@@ -290,6 +347,7 @@ function combineNotes(notes) {
   return combinedString.trim();
 }
 
+
 // queryUserThoughts
 app.post("/queryUserThoughts", async (req, res) => {
   const userId = req.body.userId;
@@ -300,6 +358,7 @@ app.post("/queryUserThoughts", async (req, res) => {
   let last_prompt = messages[messages.length - 1].text;
   let prompt_intent = await identify_prompt_intent(last_prompt);
 
+
   let processed_messages = [];
   for (let i = 0; i < messages.length; i++) {
     const role = messages[i].role;
@@ -308,14 +367,18 @@ app.post("/queryUserThoughts", async (req, res) => {
     processed_messages.push(dict);
   }
 
+
   const dict = { role: "system", content: system_message };
   processed_messages.unshift(dict);
 
+
   const response = await resolve_prompt(prompt_intent, processed_messages);
+
 
   console.log(response);
   return res.json(response);
 });
+
 
 app.post("/addTags", async (req, res) => {
   const tags = req.body.tags;
@@ -327,6 +390,7 @@ app.post("/addTags", async (req, res) => {
     .update({ Tags: updatedTags })
     .eq("id", user_id);
 
+
   if (updateError) {
     console.error(updateError);
     res.status(500).send("Error updating user profile");
@@ -334,13 +398,14 @@ app.post("/addTags", async (req, res) => {
   }
   res.status(200).send("Tags updated successfully");
 });
-// 
+//
 const getCurrentTags = async (userId) => {
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("Tags")
     .eq("id", userId)
     .single();
+
 
   if (profileError) {
     console.error(profileError);
@@ -351,9 +416,11 @@ const getCurrentTags = async (userId) => {
   return currentTags;
 };
 
+
 const deleteNote = async (id) => {
   //
   const { data, error } = await supabase.from("notes").delete().eq("id", id);
+
 
   if (error) {
     console.log("Error deleting note:", error);
@@ -367,6 +434,7 @@ const getAllTags = async (userId) => {
     .from("notes")
     .select("*")
     .eq("user_id", userId);
+
 
   if (error) {
     console.log("Error fetching Tags:", error);
@@ -385,6 +453,7 @@ const getAllTags = async (userId) => {
   }
 };
 
+
 const getDict = (tags) => {
   const counts = {};
   tags.forEach((tag) => {
@@ -398,22 +467,27 @@ const getDict = (tags) => {
   return counts;
 };
 
+
 const sendNewTags = async (userId, tags) => {
   const orderedData = [];
+
 
   const { error: updateError } = await supabase
     .from("profiles")
     .update({ tags_new: tags })
     .eq("id", userId);
 
+
   if (updateError) {
     console.error(updateError);
     return;
   }
 
+
   while (Object.keys(tags).length > 0) {
     let maxKey = null;
     let maxValue = -Infinity;
+
 
     for (const key in tags) {
       if (tags[key] > maxValue) {
@@ -425,10 +499,12 @@ const sendNewTags = async (userId, tags) => {
     delete tags[maxKey];
   }
 
+
   const { error: updateError2 } = await supabase
     .from("profiles")
     .update({ Tags: orderedData })
     .eq("id", userId);
+
 
   if (updateError2) {
     console.error("second error:" + updateError);
@@ -436,6 +512,7 @@ const sendNewTags = async (userId, tags) => {
   }
   return orderedData;
 };
+
 
 const updateTags = async (userId) => {
   const tags = await getAllTags(userId);
@@ -452,12 +529,14 @@ const updateTags = async (userId) => {
   return newTags;
 };
 
+
 const fetchNumQueries = async (userId) => {
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("num_queries")
     .eq("id", userId)
     .single();
+
 
   if (profileError) {
     // console.error(profileError);
@@ -466,9 +545,12 @@ const fetchNumQueries = async (userId) => {
     return 0;
   }
 
+
   const numQueries = profileData.num_queries;
+  console.log(numQueries)
   return numQueries;
 };
+
 
 app.post("/fetchNumQueries", async (req, res) => {
   const userId = req.body.userId;
@@ -476,15 +558,19 @@ app.post("/fetchNumQueries", async (req, res) => {
   res.send(num_queries.toString());
 });
 
+
 const incrNumQueries = async (userId) => {
   console.log("incrNumQueries called");
 
+
   const cur_queries = await fetchNumQueries(userId);
+
 
   const { error: updateError } = await supabase
     .from("profiles")
     .update({ num_queries: cur_queries + 1 })
     .eq("id", userId);
+
 
   if (updateError) {
     console.error(updateError);
@@ -492,16 +578,31 @@ const incrNumQueries = async (userId) => {
   }
 };
 
+
 app.post("/incrNumQueries", async (req) => {
   const userId = req.body.userId;
-  await incrNumQueries(userId);
+ 
+  const cur_queries = await fetchNumQueries(userId);
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({ num_queries: cur_queries + 1 })
+    .eq("id", userId);
+
+
+  if (updateError) {
+    console.error(updateError);
+    return;
+  }
+  res.send(queries);
 });
+
 
 app.post("/fetchUserNotes", async (req, res) => {
   const userId = req.body.userId;
   const notes = await fetchUserNotes(userId);
   res.send(notes);
 });
+
 
 app.post("/getUserTags", async (req, res) => {
   const userId = req.body.userId;
@@ -511,6 +612,7 @@ app.post("/getUserTags", async (req, res) => {
   res.send({ tags: tags, counts: tagsAndCounts });
 });
 
+
 app.post("/deleteNote", async (req, res) => {
   const id = req.body.id;
   const userId = req.body.userId;
@@ -518,6 +620,7 @@ app.post("/deleteNote", async (req, res) => {
   const newTags = await updateTags(userId);
   res.send(newTags);
 });
+
 
 app.post("/fetchNoteAudio", async (req, res) => {
   const path = req.body.path;
@@ -528,17 +631,20 @@ app.post("/fetchNoteAudio", async (req, res) => {
       .from("resources")
       .download(path);
 
+
     if (error) {
       console.error(error);
       res.sendStatus(500);
       return;
     }
 
+
     // Set the appropriate headers for audio playback
     res.set({
       "Content-Type": "audio/mp3",
       "Content-Disposition": "inline",
     });
+
 
     // Pipe the audio data to the response
     console.log("Note audio found, sending to frontend...");
@@ -548,6 +654,7 @@ app.post("/fetchNoteAudio", async (req, res) => {
     res.sendStatus(500);
   }
 });
+
 
 app.listen(process.env.PORT || port, () => {
   console.log(`Server running`);
