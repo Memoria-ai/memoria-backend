@@ -334,7 +334,7 @@ app.post("/addTags", async (req, res) => {
   }
   res.status(200).send("Tags updated successfully");
 });
-
+// 
 const getCurrentTags = async (userId) => {
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
