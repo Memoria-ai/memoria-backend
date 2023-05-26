@@ -214,8 +214,8 @@ app.post("/addNote", async (req, res) => {
           cacheControl: "3600",
           contentType: "audio/mp3",
         });
-      console.log("Recording uploaded: " + recording_name);
-      console.log(data);
+      // console.log("Recording uploaded: " + recording_name);
+      // console.log(data);
       //console.error(error);
     }
   }
@@ -248,7 +248,7 @@ const fetchUserNotes = async (userId) => {
 
   if (error) {
     console.log("Error fetching notes:", error);
-    return null;
+    return {};
   } else {
     // Decrypt the data before returning it to the frontend
     const decryptedNotes = notes.map((note) => {
@@ -313,7 +313,7 @@ app.post("/queryUserThoughts", async (req, res) => {
 
   const response = await resolve_prompt(prompt_intent, processed_messages);
 
-  console.log(response);
+  // console.log(response);
   return res.json(response);
 });
 
@@ -521,7 +521,7 @@ app.post("/deleteNote", async (req, res) => {
 
 app.post("/fetchNoteAudio", async (req, res) => {
   const path = req.body.path;
-  console.log("Fetching note from path: " + path);
+  // console.log("Fetching note from path: " + path);
   // console.log("Fetching note from path: ...")
   try {
     const { data, error } = await supabase.storage
@@ -541,7 +541,7 @@ app.post("/fetchNoteAudio", async (req, res) => {
     });
 
     // Pipe the audio data to the response
-    console.log("Note audio found, sending to frontend...");
+    // console.log("Note audio found, sending to frontend...");
     res.send(data);
   } catch (error) {
     console.error(error);
