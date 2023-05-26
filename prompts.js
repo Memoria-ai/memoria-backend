@@ -4,13 +4,13 @@ const chatGPT_model = "gpt-3.5-turbo";
 function configure_chatbot(notes) {
   let currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
   system_prompt =
-    "You will act as a bot named Memoria that helps me remember my thoughts and ideas, and expand and answer questions about them. \
+    "You will act as an AI named Memoria that helps me remember my thoughts and ideas, and expand and answer questions about them. \
     Attempt to respond to my queries based on the thoughts and ideas found in the text inside triple backticks,\
     unless I explicitly request you to be creative or to generate new ideas. \
     When answering questions that consider a date, use the following as the current date: " +
     currentDate +
     ".\n" +
-    "User thoughts: ```" +
+    "My thoughts and ideas:\n ```" +
     combineNotes(notes) +
     "```";
   return system_prompt;
@@ -21,11 +21,11 @@ function combineNotes(notes) {
   for (let note of notes) {
     const dateOnlyString = new Date(note?.timestamp).toISOString().slice(0, 10); //toLocaleDateString() is better formatting IMO -mc
     combinedString +=
-      "Date: " +
+      "Thought Date: " +
       dateOnlyString +
-      "\nNote: " +
+      "\nThought content: " +
       note?.content +
-      "\nTags: " +
+      "\nThought Tags: " +
       (note.tags ? note.tags.toString() : "") +
       "\n\n";
   }
@@ -37,7 +37,7 @@ async function identify_prompt_intent(user_prompt) {
   prompt =
     "Using 1 word, identify the intent of the query found inside triple backticks. \
     Attempt to match the intent to the closest option from the following list: " +
-    possible_intents.join(" ") +
+    possible_intents.join(", ") +
     "\n\
     If none of the options match, return the word 'other'.\
     Query:```" +
@@ -72,14 +72,15 @@ async function recall_fact_from_thoughts(messages) { // Harsh feedback: referenc
     "You will first reply the prompt based on my thoughts, and then reference \
     the particular thoughts associated with the response that were provided earlier inside triple backticks. \
     Count how many thoughts are associated with the prompt. If more than 1 thought matches the prompt,\
-    only reference the 3 most recent thoughts.\
+    reference at maximum the 3 most relevant thoughts.\
     The response should look like this:\n\
     Prompt response\n\
-    --Associated notes--\n\
-    Date: Note\n\
-    Date: Note\n\
+    Summary of all associated thoughts\n\n\
+    --Associated thoughts--\n\
+    Date: Thougth content\n\n\
+    Date: Thougth content\n\n\
     ...\
-    Date: Note\n\
+    Date: Thougth content\n\n\
     When providing dates in your response, you will convert them based on these rules: \
     If date is equal to the current date, use 'Today'.\
     If date is equal to the day previous to the current date, use 'Yesterday'.\
@@ -97,8 +98,8 @@ async function recall_fact_from_thoughts(messages) { // Harsh feedback: referenc
 
 async function summarize_thoughts(messages) {
   system_prompt =
-    "You will summarize the thoughts that match my prompt. Only inlude the Note: content of the thoughts, \
-    and do not include the Dates unless the prompt specifies this explictly";
+    "You will summarize the thoughts that match my prompt. \
+    Do not include the Dates unless the prompt specifies this explictly";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
   messages.push(dict);
@@ -130,6 +131,8 @@ async function catch_all(messages) {
 //TODO add more use cases here
 
 async function call_chatGPT(messages, max_tokens, temperature = 0) {
+  console.log("Calling chatGPT with the following prompt:");
+  console.log(messages);
   const response = await axios
     .post(
       "https://api.openai.com/v1/chat/completions",
