@@ -493,7 +493,7 @@ const incrNumQueries = async (userId) => {
   return cur_queries + 1;
 };
 
-app.post("/incrNumQueries", async (req) => {
+app.post("/incrNumQueries", async (req, res) => {
   const userId = req.body.userId;
   const num = await incrNumQueries(userId);
   res.send(num.toString());
