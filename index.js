@@ -214,17 +214,17 @@ async function makeAudioTranscriptionRequest(formData) {
 }
 
 app.post("/transcribe/:user_id", authenticateAndAuthorize, upload.single("audio"), async (req, res) => {
-  const { user_id } = req.params;
-  if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
+  // const { user_id } = req.params;
+  // if (user_id !== req.userId) {
+  //   return res.status(403).json({ message: 'Forbidden' });
+  // }
   try {
     const audioSource = {
       stream: Readable.from(req.file.buffer),
       mimetype: req.file.mimetype,
     };
 
-    const response = await deepgram.transcription.preRecorded(audioSource, {punctuate: true, model: 'nova', language: 'en-US' });
+    const response = await deepgram.transcription.preRecorded(audioSource, { punctuate: true, model: 'nova', language: 'en-US' });
     const transcription = response.results.channels[0].alternatives[0].transcript;
     res.json({ transcription: transcription });
   } catch (error) {
@@ -232,6 +232,7 @@ app.post("/transcribe/:user_id", authenticateAndAuthorize, upload.single("audio"
     res.status(500).json({ error: "An error occurred during transcription" });
   }
 });
+
 
 // Helper function to pause execution for a given duration
 function sleep(ms) {
