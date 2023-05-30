@@ -22,7 +22,6 @@ const {
 } = require("./prompts");
 const { auth } = require("firebase-admin");
 const deepgram = new Deepgram(process.env.voice_key);
-// 
 const server = [
   "https://memoria.live",
   "https://www.memoria.live",
