@@ -11,9 +11,25 @@ const { Deepgram } = require("@deepgram/sdk");
 const fs = require("fs");
 const FormData = require("form-data");
 const { Readable } = require("stream");
-const jwt = require('jsonwebtoken');
-const { encryptData, decryptData, authenticateAndAuthorize, generateJwtToken } = require('./encryption');
-const { makeChatRequest, getAllTags, makeAudioTranscriptionRequest, fetchUserNotes, getCurrentTags, deleteNote, getDict, sendNewTags, updateTags, fetchNumQueries } = require('./dataops');
+const jwt = require("jsonwebtoken");
+const {
+  encryptData,
+  decryptData,
+  authenticateAndAuthorize,
+  generateJwtToken,
+} = require("./encryption");
+const {
+  makeChatRequest,
+  getAllTags,
+  makeAudioTranscriptionRequest,
+  fetchUserNotes,
+  getCurrentTags,
+  deleteNote,
+  getDict,
+  sendNewTags,
+  updateTags,
+  fetchNumQueries,
+} = require("./dataops");
 require("dotenv").config();
 const app = express();
 const port = 8000;
@@ -54,9 +70,8 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.post('/login', async (req, res) => {
-
-  const userId = req.userId; 
+app.post("/login", async (req, res) => {
+  const userId = req.userId;
   const token = generateJwtToken(userId);
   res.json({ token });
 });
@@ -64,7 +79,7 @@ app.post('/login', async (req, res) => {
 app.post("/gpt/:user_id", authenticateAndAuthorize, async (req, res) => {
   const { user_id } = req.params;
   if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+    return res.status(403).json({ message: "Forbidden" });
   }
   try {
     await makeChatRequest(req, res);
@@ -74,51 +89,65 @@ app.post("/gpt/:user_id", authenticateAndAuthorize, async (req, res) => {
   }
 });
 
-app.post("/audio/:user_id", authenticateAndAuthorize, upload.single("audio"), async (req, res) => {
-  const { user_id } = req.params;
-  if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+app.post(
+  "/audio/:user_id",
+  authenticateAndAuthorize,
+  upload.single("audio"),
+  async (req, res) => {
+    const { user_id } = req.params;
+    if (user_id !== req.userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const audioBlob = req.file.buffer;
+      const formData = new FormData();
+      formData.append("file", audioBlob, "audio.mp3");
+      formData.append("model", "whisper-1");
+      const whisperResponse = await makeAudioTranscriptionRequest(formData);
+      const transcript = whisperResponse.data.text;
+      res.setHeader("Content-Type", "application/json");
+      res.json({ text: transcript });
+    } catch (error) {
+      console.error("There was an error:", error);
+      res.status(500).json({ message: "Error processing audio" });
+    }
   }
-  try {
-    const audioBlob = req.file.buffer;
-    const formData = new FormData();
-    formData.append("file", audioBlob, "audio.mp3");
-    formData.append("model", "whisper-1");
-    const whisperResponse = await makeAudioTranscriptionRequest(formData);
-    const transcript = whisperResponse.data.text;
-    res.setHeader("Content-Type", "application/json");
-    res.json({ text: transcript });
-  } catch (error) {
-    console.error("There was an error:", error);
-    res.status(500).json({ message: "Error processing audio" });
-  }
-});
+);
 
+app.post(
+  "/transcribe/:user_id",
+  authenticateAndAuthorize,
+  upload.single("audio"),
+  async (req, res) => {
+    if (!req.file.buffer) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const audioSource = {
+        stream: Readable.from(req.file.buffer),
+        mimetype: req.file.mimetype,
+      };
 
-app.post("/transcribe/:user_id", authenticateAndAuthorize, upload.single("audio"), async (req, res) => {
-  if (!req.file.buffer) {
-    return res.status(403).json({ message: 'Forbidden' });
+      const response = await deepgram.transcription.preRecorded(audioSource, {
+        punctuate: true,
+        model: "nova",
+        language: "en-US",
+      });
+      const transcription =
+        response.results.channels[0].alternatives[0].transcript;
+      res.json({ transcription: transcription });
+    } catch (error) {
+      console.log("Error:", error.message);
+      res.status(500).json({ error: "An error occurred during transcription" });
+    }
   }
-  try {
-    const audioSource = {
-      stream: Readable.from(req.file.buffer),
-      mimetype: req.file.mimetype,
-    };
-
-    const response = await deepgram.transcription.preRecorded(audioSource, { punctuate: true, model: 'nova', language: 'en-US' });
-    const transcription = response.results.channels[0].alternatives[0].transcript;
-    res.json({ transcription: transcription });
-  } catch (error) {
-    console.log("Error:", error.message);
-    res.status(500).json({ error: "An error occurred during transcription" });
-  }
-});
+);
 
 // database stuff
 app.post("/addNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   const { user_id } = req.params;
   if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+    return res.status(403).json({ message: "Forbidden" });
   }
   const { title, content, tags } = req.body;
   const encryptedContent = encryptData(
@@ -177,56 +206,59 @@ app.post("/addNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   const numNotes = await fetchUserNotes(user_id).length;
 });
 
-
-app.get('/fetchNotes/:user_id', authenticateAndAuthorize, async (req, res) => {
+app.get("/fetchNotes/:user_id", authenticateAndAuthorize, async (req, res) => {
   const { user_id } = req.params;
   if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+    return res.status(403).json({ message: "Forbidden" });
   }
   try {
     const decryptedNotes = await fetchUserNotes(user_id);
     res.json(decryptedNotes);
   } catch (error) {
-    console.error('Error fetching notes:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    console.error("Error fetching notes:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 // queryUserThoughts
-app.post("/queryUserThoughts/:user_id", authenticateAndAuthorize, async (req, res) => {
-  const { user_id } = req.params;
-  if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+app.post(
+  "/queryUserThoughts/:user_id",
+  authenticateAndAuthorize,
+  async (req, res) => {
+    const { user_id } = req.params;
+    if (user_id !== req.userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const userId = req.body.userId;
+    const messages = req.body.messages;
+    const notes = await fetchUserNotes(userId);
+    const max_tokens = 200;
+    let system_message = configure_chatbot(notes);
+    let last_prompt = messages[messages.length - 1].text;
+    let prompt_intent = await identify_prompt_intent(last_prompt);
+
+    let processed_messages = [];
+    for (let i = 0; i < messages.length; i++) {
+      const role = messages[i].role;
+      const content = messages[i].text;
+      const dict = { role, content };
+      processed_messages.push(dict);
+    }
+
+    const dict = { role: "system", content: system_message };
+    processed_messages.unshift(dict);
+
+    const response = await resolve_prompt(prompt_intent, processed_messages);
+
+    // console.log(response);
+    return res.json(response);
   }
-  const userId = req.body.userId;
-  const messages = req.body.messages;
-  const notes = await fetchUserNotes(userId);
-  const max_tokens = 200;
-  let system_message = configure_chatbot(notes);
-  let last_prompt = messages[messages.length - 1].text;
-  let prompt_intent = await identify_prompt_intent(last_prompt);
-
-  let processed_messages = [];
-  for (let i = 0; i < messages.length; i++) {
-    const role = messages[i].role;
-    const content = messages[i].text;
-    const dict = { role, content };
-    processed_messages.push(dict);
-  }
-
-  const dict = { role: "system", content: system_message };
-  processed_messages.unshift(dict);
-
-  const response = await resolve_prompt(prompt_intent, processed_messages);
-
-  // console.log(response);
-  return res.json(response);
-});
+);
 
 app.post("/addTags/:user_id", authenticateAndAuthorize, async (req, res) => {
   const { user_id } = req.params;
   if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+    return res.status(403).json({ message: "Forbidden" });
   }
   const tags = req.body.tags;
   // const user_id = req.body.userId; // assuming that the user ID is stored in the `req.user.id` property
@@ -244,16 +276,20 @@ app.post("/addTags/:user_id", authenticateAndAuthorize, async (req, res) => {
   }
   res.status(200).send("Tags updated successfully");
 });
-// 
-app.post("/fetchNumQueries/:user_id", authenticateAndAuthorize, async (req, res) => {
-  const { user_id } = req.params;
-  if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+//
+app.post(
+  "/fetchNumQueries/:user_id",
+  authenticateAndAuthorize,
+  async (req, res) => {
+    const { user_id } = req.params;
+    if (user_id !== req.userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const userId = req.body.userId;
+    const num_queries = await fetchNumQueries(userId);
+    res.send(num_queries.toString());
   }
-  const userId = req.body.userId;
-  const num_queries = await fetchNumQueries(userId);
-  res.send(num_queries.toString());
-});
+);
 
 const incrNumQueries = async (userId) => {
   const cur_queries = await fetchNumQueries(userId);
@@ -269,27 +305,35 @@ const incrNumQueries = async (userId) => {
   return cur_queries + 1;
 };
 
-app.post("/incrNumQueries/:user_id", authenticateAndAuthorize, async (req, res) => {
-  const { user_id } = req.params;
-  if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+app.post(
+  "/incrNumQueries/:user_id",
+  authenticateAndAuthorize,
+  async (req, res) => {
+    const { user_id } = req.params;
+    if (user_id !== req.userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const userId = req.body.userId;
+    const num = await incrNumQueries(userId);
+    res.send(num.toString());
   }
-  const userId = req.body.userId;
-  const num = await incrNumQueries(userId);
-  res.send(num.toString());
-});
+);
 
-app.post("/getUserTags/:user_id", authenticateAndAuthorize, async (req, res) => {
-  const { user_id } = req.params;
-  if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
+app.post(
+  "/getUserTags/:user_id",
+  authenticateAndAuthorize,
+  async (req, res) => {
+    const { user_id } = req.params;
+    if (user_id !== req.userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const userId = req.body.userId;
+    const tags = await getCurrentTags(userId);
+    const tagsFull = await getAllTags(userId);
+    const tagsAndCounts = getDict(tagsFull);
+    res.send({ tags: tags, counts: tagsAndCounts });
   }
-  const userId = req.body.userId;
-  const tags = await getCurrentTags(userId);
-  const tagsFull = await getAllTags(userId);
-  const tagsAndCounts = getDict(tagsFull);
-  res.send({ tags: tags, counts: tagsAndCounts });
-});
+);
 
 app.post("/deleteNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   const id = req.body.id;
@@ -299,37 +343,41 @@ app.post("/deleteNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   res.send(newTags);
 });
 
-app.post("/fetchNoteAudio/:userid", authenticateAndAuthorize, async (req, res) => {
-  const { user_id } = req.params;
-  if (user_id !== req.userId) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-  const path = req.body.path;
-  try {
-    const { data, error } = await supabase.storage
-      .from("resources")
-      .download(path);
+app.post(
+  "/fetchNoteAudio/:userid",
+  authenticateAndAuthorize,
+  async (req, res) => {
+    const { user_id } = req.params;
+    if (user_id !== req.userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const path = req.body.path;
+    try {
+      const { data, error } = await supabase.storage
+        .from("resources")
+        .download(path);
 
-    if (error) {
+      if (error) {
+        console.error(error);
+        res.sendStatus(500);
+        return;
+      }
+
+      res.set({
+        "Content-Type": "audio/mp3",
+        "Content-Disposition": "inline",
+      });
+
+      res.send(data);
+    } catch (error) {
       console.error(error);
       res.sendStatus(500);
-      return;
     }
-
-    res.set({
-      "Content-Type": "audio/mp3",
-      "Content-Disposition": "inline",
-    });
-
-    res.send(data);
-  } catch (error) {
-    console.error(error);
-    res.sendStatus(500);
   }
-});
+);
 
 const server2 = app.listen(process.env.PORT || port, () => {
   console.log(`Server running`);
 });
 
-server2.setTimeout(200000)
+server2.setTimeout(200000);
