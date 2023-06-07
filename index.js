@@ -47,7 +47,7 @@ const server = [
   "http://memoria.live",
 ];
 const local = ["http://localhost:3000"];
-const current = server;
+const current = local;
 
 app.use(bodyParser.json());
 app.use(
@@ -70,10 +70,27 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.post("/login", async (req, res) => {
-  const userId = req.userId;
-  const token = generateJwtToken(userId);
-  res.json({ token });
+app.get('/login', async (req, res) => {
+  console.log('login')
+  try {
+    const supabaseClient = createClient(
+      process.env.REACT_APP_SUPABASE_URL || '',
+      process.env.REACT_APP_SUPABASE_PUBLIC_KEY_ANON || '',
+      { global: { headers: { Authorization: req.headers.get('Authorization') } } }
+    );
+
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser()
+
+    const { data, error } = await supabaseClient.from('users').select('*')
+    if (error) throw error
+    console.log(data)
+    console.log(user)
+    res.status(200).json({ user, data });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 app.post("/gpt/:user_id", authenticateAndAuthorize, async (req, res) => {

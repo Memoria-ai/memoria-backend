@@ -13,7 +13,6 @@ const encryptData = (data, secretKey) => {
     );
     return originalText;
   };
-  
   const authenticateAndAuthorize = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     if (!authHeader) {
@@ -21,8 +20,13 @@ const encryptData = (data, secretKey) => {
     }
     try {
       const token = authHeader.split(' ')[1];
-      const decodedToken = jwt.decode(token);
-      const userId = decodedToken.sub;
+      console.log(token)
+      const { user } = await supabase.auth.getUser(token);
+
+
+      console.log('user' + user)
+      const userId = user.id;
+      console.log(userId)
       if (userId !== req.params.user_id) {
         return res.status(403).json({ message: 'Forbidden' });
       }
@@ -33,6 +37,7 @@ const encryptData = (data, secretKey) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
   };
+
 
   
 
