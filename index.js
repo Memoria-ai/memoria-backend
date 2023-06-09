@@ -121,8 +121,8 @@ app.post('/login', async (req, res) => {
 
 app.post("/gpt/:user_id", authenticateAndAuthorize, async (req, res) => {
   const { user_id } = req.params;
-  console.log("user_id:", user_id);
-  console.log("req.body:", req.body.userId);
+  // console.log("user_id:", user_id);
+  // console.log("req.body:", req.body.userId);
   if (user_id !== req.body.userId) {
     return res.status(403).json({ message: "Forbidden" });
   }
@@ -192,8 +192,8 @@ app.post(
 app.post("/addNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   const supabaseClient = req.supabaseClient;
   const { user_id } = req.params;
-  console.log("user_id:", user_id);
-  console.log("req.body:", req.body.userId);
+  // console.log("user_id:", user_id);
+  // console.log("req.body:", req.body.userId);
   if (user_id !== req.body.userId) {
     return res.status(403).json({ message: "Forbidden" });
   }
@@ -343,7 +343,7 @@ const incrNumQueries = async (userId, supabaseClient) => {
     console.error(updateError);
     return;
   }
-  console.log(cur_queries)
+  // console.log(cur_queries)
   return cur_queries + 1;
 };
 
@@ -359,7 +359,7 @@ app.post(
     }
     const userId = req.body.userId;
     const num = await incrNumQueries(userId, supabaseClient);
-    console.log(num)
+    // console.log(num)
     res.send(num.toString());
   }
 );

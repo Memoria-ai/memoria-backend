@@ -37,7 +37,7 @@ async function makeChatRequest(req, res) {
   
   
 async function makeChatRequestTemp(messages, tokens) {
-  console.log('making the chat request with mesasges: ', messages, ' and tokens: ', tokens, '...')
+  // console.log('making the chat request with mesasges: ', messages, ' and tokens: ', tokens, '...')
 
   try {
     const response = await axios.post(
