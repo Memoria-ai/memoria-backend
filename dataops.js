@@ -114,8 +114,8 @@ const getCurrentTags = async (userId, supabaseClient) => {
     return currentTags;
   };
   
-  const deleteNote = async (id) => {
-    const supabaseClient = req.supabaseClient;
+  const deleteNote = async (id, supabaseClient) => {
+    
     const { data, error } = await supabaseClient.from("notes").delete().eq("id", id);
   
     if (error) {
@@ -126,9 +126,7 @@ const getCurrentTags = async (userId, supabaseClient) => {
     }
   };
   const getAllTags = async (userId, supabaseClient) => {
-    const { data: notes, error } = await supabaseClient
-      .from("notes")
-      .select("*")
+    const { data: notes, error: error } = await supabaseClient.from("notes").select("*")
   
     if (error) {
       console.log("Error fetching Tags:", error);
@@ -158,8 +156,7 @@ const getCurrentTags = async (userId, supabaseClient) => {
     return counts;
   };
   
-  const sendNewTags = async (userId, tags) => {
-    const supabaseClient = req.supabaseClient;
+  const sendNewTags = async (userId, tags, supabaseClient) => {
     const orderedData = [];
   
     const { error: updateError } = await supabaseClient
@@ -198,8 +195,8 @@ const getCurrentTags = async (userId, supabaseClient) => {
     return orderedData;
   };
   
-  const updateTags = async (userId) => {
-    const tags = await getAllTags(userId);
+  const updateTags = async (userId, supabaseClient) => {
+    const tags = await getAllTags(userId, supabaseClient);
     const counts = {};
     tags.forEach((tag) => {
       // Remove leading and trailing single quotation marks
@@ -209,7 +206,7 @@ const getCurrentTags = async (userId, supabaseClient) => {
         counts[tag] += 1;
       }
     });
-    const newTags = await sendNewTags(userId, counts);
+    const newTags = await sendNewTags(userId, counts, supabaseClient);
     return newTags;
   };
   

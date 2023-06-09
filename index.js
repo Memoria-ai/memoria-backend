@@ -139,7 +139,7 @@ app.post(
   upload.single("audio"),
   async (req, res) => {
     const { user_id } = req.params;
-    if (user_id !== req.userId) {
+    if (user_id !== req.body.userId) {
       return res.status(403).json({ message: "Forbidden" });
     }
     try {
@@ -191,7 +191,9 @@ app.post(
 app.post("/addNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   const supabaseClient = req.supabaseClient;
   const { user_id } = req.params;
-  if (user_id !== req.userId) {
+  console.log("user_id:", user_id);
+  console.log("req.body:", req.body.userId);
+  if (user_id !== req.body.userId) {
     return res.status(403).json({ message: "Forbidden" });
   }
   const { title, content, tags } = req.body;
@@ -243,7 +245,7 @@ app.post("/addNote/:user_id", authenticateAndAuthorize, async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Error inserting new note" });
   } else {
-    const newTags = await updateTags(user_id);
+    const newTags = await updateTags(user_id, supabaseClient);
     res.status(200).json(data);
   }
 
@@ -297,11 +299,10 @@ app.post(
 app.post("/addTags/:user_id", authenticateAndAuthorize, async (req, res) => {
   const supabaseClient = req.supabaseClient;
   const { user_id } = req.params;
-  if (user_id !== req.userId) {
+  if (user_id !== req.body.userId) {
     return res.status(403).json({ message: "Forbidden" });
   }
   const tags = req.body.tags;
-  // const user_id = req.body.userId; // assuming that the user ID is stored in the `req.user.id` property
   const currentTags = await getCurrentTags(user_id, supabaseClient);
   const updatedTags = [...new Set([...currentTags, ...tags])];
   const { error: updateError } = await supabaseClient
@@ -380,10 +381,11 @@ app.post(
 );
 
 app.post("/deleteNote/:user_id", authenticateAndAuthorize, async (req, res) => {
+  const supabaseClient = req.supabaseClient;
   const id = req.body.id;
   const userId = req.body.userId;
-  const data = await deleteNote(id);
-  const newTags = await updateTags(userId);
+  const data = await deleteNote(id, supabaseClient);
+  const newTags = await updateTags(userId, supabaseClient);
   res.send(newTags);
 });
 
@@ -393,7 +395,7 @@ app.post(
   async (req, res) => {
     const supabaseClient = req.supabaseClient;
     const { user_id } = req.params;
-    if (user_id !== req.userId) {
+    if (user_id !== req.body.userId) {
       return res.status(403).json({ message: "Forbidden" });
     }
     const path = req.body.path;
