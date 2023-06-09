@@ -21,6 +21,7 @@ const {
 } = require("./encryption");
 const {
   makeChatRequest,
+  makeChatRequestTemp,
   getAllTags,
   makeAudioTranscriptionRequest,
   fetchUserNotes,
@@ -48,7 +49,7 @@ const server = [
   "http://memoria.live",
 ];
 const local = ["http://localhost:3000"];
-const current = local;
+const current = server;
 
 
 const attachSupabaseClient = (req, res, next) => {
@@ -388,6 +389,52 @@ app.post("/deleteNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   const newTags = await updateTags(userId, supabaseClient);
   res.send(newTags);
 });
+
+function cleanTitle(title) {
+  // Remove leading and trailing double quotes
+  title = title.replace(/^"(.*)"$/, '$1');
+
+  // Remove trailing period
+  title = title.replace(/\.$/, '');
+
+  return title;
+}
+
+// app.post('/updateAllTitles/:user_id', authenticateAndAuthorize, async (req, res) => {
+//   const supabaseClient = req.supabaseClient;
+//   const userId = req.body.userId;
+//   const notes = await fetchUserNotes(userId, supabaseClient);
+//   console.log("the notes are: ", notes);
+//   for (let i = 0; i < notes.length; i++) {
+//     const note = notes[i];
+//     console.log("looping throught the notes, current is: ");
+    
+//     const id = note.id;
+//     const title = note.title;
+//     const content = note.content;
+//     if(title == null || title == undefined || title == "") {
+//       console.log(title)
+//       console.log(content)
+//       const new_title = await makeChatRequestTemp("Return a 3 word title for this following note: " + note.content, 20);
+//       console.log("the new title is: ", new_title);
+//       const finalTitle = cleanTitle(new_title);
+//       const encrypted = await encryptData(finalTitle, process.env.REACT_APP_DECRYPTION_KEY);
+
+
+//       const { error: updateError } = await supabaseClient
+//         .from("notes")
+//         .update({ title: encrypted })
+//         .eq("id", id);
+
+//       if(updateError) {
+//         console.error(updateError);
+//         res.status(500).send("Error updating user profile");
+//         return;
+//       }
+//     }
+//   }
+//   res.send("Updated all titles");
+// });
 
 app.post(
   "/fetchNoteAudio/:userid",

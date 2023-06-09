@@ -35,6 +35,38 @@ async function makeChatRequest(req, res) {
     }
   }
   
+  
+async function makeChatRequestTemp(messages, tokens) {
+  console.log('making the chat request with mesasges: ', messages, ' and tokens: ', tokens, '...')
+
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "system", content: messages }],
+        max_tokens: tokens,
+        n: 1,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + process.env.REACT_APP_GPT_PRIVATE_KEY,
+        },
+      }
+    );
+    if(response.data.choices[0].message.content){
+      return (response.data.choices[0].message.content);
+    }
+    return ''
+  } catch (error) {
+    console.error("Error:", error);
+    await sleep(1000);
+    // return makeChatRequest(req, res);
+    return '';
+  }
+}
+
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -222,6 +254,7 @@ const getCurrentTags = async (userId, supabaseClient) => {
   
 module.exports = {
     makeChatRequest,
+    makeChatRequestTemp, 
     makeAudioTranscriptionRequest,
     fetchUserNotes,
     getCurrentTags,
