@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const CryptoJS = require('crypto-js');
 require('dotenv').config();
-
+const { supabase } = require("./supabaseClient");
 
 const encryptData = (data, secretKey) => {
     const ciphertext = CryptoJS.AES.encrypt(data, secretKey).toString();
@@ -19,18 +19,7 @@ const encryptData = (data, secretKey) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
     try {
-      const token = authHeader.split(' ')[1];
-      console.log(token)
-      const { user } = await supabase.auth.getUser(token);
-
-
-      console.log('user' + user)
-      const userId = user.id;
-      console.log(userId)
-      if (userId !== req.params.user_id) {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-      req.userId = userId;
+      const token = authHeader;
       next();
     } catch (error) {
       console.error('Error verifying JWT:', error);

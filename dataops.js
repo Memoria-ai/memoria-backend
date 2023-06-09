@@ -65,11 +65,12 @@ async function makeAudioTranscriptionRequest(formData) {
   }
 
   
-const fetchUserNotes = async (userId) => {
-    const { data: notes, error } = await supabase
+const fetchUserNotes = async (userId, supabaseClient) => {
+    // const supabaseClient = req.supabaseClient;
+    const { data: notes, error } = await supabaseClient
       .from("notes")
       .select("*")
-      .eq("user_id", userId);
+      // .eq("user_id", userId);
   
     if (error) {
       console.log("Error fetching notes:", error);
@@ -98,25 +99,24 @@ const fetchUserNotes = async (userId) => {
     }
   };
   
-const getCurrentTags = async (userId) => {
-    const { data: profileData, error: profileError } = await supabase
+const getCurrentTags = async (userId, supabaseClient) => {
+    const { data: profileData, error: profileError } = await supabaseClient
       .from("profiles")
       .select("Tags")
-      .eq("id", userId)
-      .single();
   
     if (profileError) {
+      console.log('get current tags error')
       console.error(profileError);
       res.status(500).send("Error fetching user profile");
       return;
     }
-    const currentTags = profileData.Tags || [];
+    const currentTags = profileData[0].Tags || [];
     return currentTags;
   };
   
   const deleteNote = async (id) => {
-    //
-    const { data, error } = await supabase.from("notes").delete().eq("id", id);
+    const supabaseClient = req.supabaseClient;
+    const { data, error } = await supabaseClient.from("notes").delete().eq("id", id);
   
     if (error) {
       console.log("Error deleting note:", error);
@@ -125,17 +125,15 @@ const getCurrentTags = async (userId) => {
       return data;
     }
   };
-  const getAllTags = async (userId) => {
-    const { data: notes, error } = await supabase
+  const getAllTags = async (userId, supabaseClient) => {
+    const { data: notes, error } = await supabaseClient
       .from("notes")
       .select("*")
-      .eq("user_id", userId);
   
     if (error) {
       console.log("Error fetching Tags:", error);
       return null;
     } else {
-      // Decrypt the data before returning it to the frontend
       let tags = [];
       notes.map((note) => {
         if (note.Tags) {
@@ -151,7 +149,6 @@ const getCurrentTags = async (userId) => {
   const getDict = (tags) => {
     const counts = {};
     tags.forEach((tag) => {
-      // Remove leading and trailing single quotation marks
       if (counts[tag] === undefined) {
         counts[tag] = 1;
       } else {
@@ -162,9 +159,10 @@ const getCurrentTags = async (userId) => {
   };
   
   const sendNewTags = async (userId, tags) => {
+    const supabaseClient = req.supabaseClient;
     const orderedData = [];
   
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from("profiles")
       .update({ tags_new: tags })
       .eq("id", userId);
@@ -188,7 +186,7 @@ const getCurrentTags = async (userId) => {
       delete tags[maxKey];
     }
   
-    const { error: updateError2 } = await supabase
+    const { error: updateError2 } = await supabaseClient
       .from("profiles")
       .update({ Tags: orderedData })
       .eq("id", userId);
@@ -215,19 +213,13 @@ const getCurrentTags = async (userId) => {
     return newTags;
   };
   
-  const fetchNumQueries = async (userId) => {
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("num_queries")
-      .eq("id", userId)
-      .single();
-  
+  const fetchNumQueries = async (userId, supabaseClient) => {
+    const { data: profileData, error: profileError } = await supabaseClient.from('profiles').select('*')
     if (profileError) {
-      console.log('profileError')
+      console.log(profileError)
       return 0;
     }
-  
-    const numQueries = profileData.num_queries;
+    const numQueries = profileData[0].num_queries;
     return numQueries;
   };
   
