@@ -12,7 +12,7 @@ const fs = require("fs");
 const FormData = require("form-data");
 const { Readable } = require("stream");
 const jwt = require("jsonwebtoken");
-const {createClient} = require("@supabase/supabase-js");
+const { createClient } = require("@supabase/supabase-js");
 const {
   encryptData,
   decryptData,
@@ -50,19 +50,19 @@ const server = [
 ];
 const local = ["http://localhost:3000"];
 const current = server;
-// 
+//
 
 const attachSupabaseClient = (req, res, next) => {
   try {
     const supabaseClient = createClient(
-      process.env.REACT_APP_SUPABASE_URL || '',
-      process.env.REACT_APP_SUPABASE_PUBLIC_KEY_ANON || '',
+      process.env.REACT_APP_SUPABASE_URL || "",
+      process.env.REACT_APP_SUPABASE_PUBLIC_KEY_ANON || "",
       {
         global: {
           headers: {
-            Authorization: `bearer ${req.headers.authorization}`
-          }
-        }
+            Authorization: `bearer ${req.headers.authorization}`,
+          },
+        },
       }
     );
 
@@ -72,7 +72,6 @@ const attachSupabaseClient = (req, res, next) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 
 app.use(bodyParser.json());
 app.use(
@@ -97,24 +96,24 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.post('/login', async (req, res) => {
+app.post("/login", async (req, res) => {
   const supabaseClient = createClient(
-    process.env.REACT_APP_SUPABASE_URL || '',
-    process.env.REACT_APP_SUPABASE_PUBLIC_KEY_ANON || '',
+    process.env.REACT_APP_SUPABASE_URL || "",
+    process.env.REACT_APP_SUPABASE_PUBLIC_KEY_ANON || "",
     {
       global: {
         headers: {
-          Authorization: `bearer ${req.headers.authorization}`
-        }
-      }
+          Authorization: `bearer ${req.headers.authorization}`,
+        },
+      },
     }
   );
   try {
-    const { data, error } = await supabaseClient.from('profiles').select('*')
-    if (error) throw error
+    const { data, error } = await supabaseClient.from("profiles").select("*");
+    if (error) throw error;
     res.status(200).json({ data });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -339,7 +338,7 @@ const incrNumQueries = async (userId, supabaseClient) => {
     .eq("id", userId);
 
   if (updateError) {
-    console.log("Error updating num_queries")
+    console.log("Error updating num_queries");
     console.error(updateError);
     return;
   }
@@ -392,10 +391,10 @@ app.post("/deleteNote/:user_id", authenticateAndAuthorize, async (req, res) => {
 
 function cleanTitle(title) {
   // Remove leading and trailing double quotes
-  title = title.replace(/^"(.*)"$/, '$1');
+  title = title.replace(/^"(.*)"$/, "$1");
 
   // Remove trailing period
-  title = title.replace(/\.$/, '');
+  title = title.replace(/\.$/, "");
 
   return title;
 }
@@ -408,7 +407,7 @@ function cleanTitle(title) {
 //   for (let i = 0; i < notes.length; i++) {
 //     const note = notes[i];
 //     console.log("looping throught the notes, current is: ");
-    
+
 //     const id = note.id;
 //     const title = note.title;
 //     const content = note.content;
@@ -419,7 +418,6 @@ function cleanTitle(title) {
 //       console.log("the new title is: ", new_title);
 //       const finalTitle = cleanTitle(new_title);
 //       const encrypted = await encryptData(finalTitle, process.env.REACT_APP_DECRYPTION_KEY);
-
 
 //       const { error: updateError } = await supabaseClient
 //         .from("notes")
