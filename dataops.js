@@ -3,7 +3,7 @@ const { supabase } = require("./supabaseClient");
 const axios = require('axios');
 const FormData = require('form-data');
 require('dotenv').config();
-
+// 
 async function makeChatRequest(req, res) {
     const { message, max_tokens } = req.body;
   
