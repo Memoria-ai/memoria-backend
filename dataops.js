@@ -139,7 +139,7 @@ const getCurrentTags = async (userId, supabaseClient) => {
     if (profileError) {
       console.log('get current tags error')
       console.error(profileError);
-      res.status(500).send("Error fetching user profile");
+      // res.status(500).send("Error fetching user profile");
       return;
     }
     const currentTags = profileData[0].Tags || [];
