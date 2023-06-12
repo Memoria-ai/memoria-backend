@@ -120,8 +120,6 @@ app.post("/login", async (req, res) => {
 
 app.post("/gpt/:user_id", authenticateAndAuthorize, async (req, res) => {
   const { user_id } = req.params;
-  // console.log("user_id:", user_id);
-  // console.log("req.body:", req.body.userId);
   if (user_id !== req.body.userId) {
     return res.status(403).json({ message: "Forbidden" });
   }
@@ -330,6 +328,7 @@ app.post(
   }
 );
 
+
 const incrNumQueries = async (userId, supabaseClient) => {
   const cur_queries = await fetchNumQueries(userId, supabaseClient);
   const { error: updateError } = await supabaseClient
@@ -389,50 +388,32 @@ app.post("/deleteNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   res.send(newTags);
 });
 
-function cleanTitle(title) {
-  // Remove leading and trailing double quotes
-  title = title.replace(/^"(.*)"$/, "$1");
 
-  // Remove trailing period
-  title = title.replace(/\.$/, "");
-
-  return title;
-}
-
-// app.post('/updateAllTitles/:user_id', authenticateAndAuthorize, async (req, res) => {
-//   const supabaseClient = req.supabaseClient;
-//   const userId = req.body.userId;
-//   const notes = await fetchUserNotes(userId, supabaseClient);
-//   console.log("the notes are: ", notes);
-//   for (let i = 0; i < notes.length; i++) {
-//     const note = notes[i];
-//     console.log("looping throught the notes, current is: ");
-
-//     const id = note.id;
-//     const title = note.title;
-//     const content = note.content;
-//     if(title == null || title == undefined || title == "") {
-//       console.log(title)
-//       console.log(content)
-//       const new_title = await makeChatRequestTemp("Return a 3 word title for this following note: " + note.content, 20);
-//       console.log("the new title is: ", new_title);
-//       const finalTitle = cleanTitle(new_title);
-//       const encrypted = await encryptData(finalTitle, process.env.REACT_APP_DECRYPTION_KEY);
-
-//       const { error: updateError } = await supabaseClient
-//         .from("notes")
-//         .update({ title: encrypted })
-//         .eq("id", id);
-
-//       if(updateError) {
-//         console.error(updateError);
-//         res.status(500).send("Error updating user profile");
-//         return;
-//       }
-//     }
-//   }
-//   res.send("Updated all titles");
-// });
+app.post("/updateNote/:user_id", authenticateAndAuthorize, async (req, res) => {
+  const supabaseClient = req.supabaseClient;
+  const id = req.body.id;
+  const title = req.body.title;
+  const content = req.body.content;
+  const tags = req.body.tags;
+  const titleEncrypted =  encryptData(title, process.env.REACT_APP_DECRYPTION_KEY)
+  const contentEncrypted =  encryptData(content, process.env.REACT_APP_DECRYPTION_KEY)
+  try {
+    
+    const { data, error } = await supabaseClient
+      .from('notes')
+      .update({ title: titleEncrypted, content: contentEncrypted, Tags: tags })
+      .match({ id: id });
+    if (error) {
+      console.error("Error Updating note:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+      return;
+    }
+    res.status(200).json({ message: "Note Updated" });
+  } catch (error) {
+    console.error("Error Updating note:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 app.post(
   "/fetchNoteAudio/:userid",
