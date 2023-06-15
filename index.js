@@ -335,7 +335,6 @@ app.post(
   }
 );
 
-
 const incrNumQueries = async (userId, supabaseClient) => {
   const cur_queries = await fetchNumQueries(userId, supabaseClient);
   const { error: updateError } = await supabaseClient
@@ -395,19 +394,23 @@ app.post("/deleteNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   res.send(newTags);
 });
 
-
 app.post("/updateNote/:user_id", authenticateAndAuthorize, async (req, res) => {
   const supabaseClient = req.supabaseClient;
   const id = req.body.id;
   const title = req.body.title;
   const content = req.body.content;
   const tags = req.body.tags;
-  const titleEncrypted =  encryptData(title, process.env.REACT_APP_DECRYPTION_KEY)
-  const contentEncrypted =  encryptData(content, process.env.REACT_APP_DECRYPTION_KEY)
+  const titleEncrypted = encryptData(
+    title,
+    process.env.REACT_APP_DECRYPTION_KEY
+  );
+  const contentEncrypted = encryptData(
+    content,
+    process.env.REACT_APP_DECRYPTION_KEY
+  );
   try {
-    
     const { data, error } = await supabaseClient
-      .from('notes')
+      .from("notes")
       .update({ title: titleEncrypted, content: contentEncrypted, Tags: tags })
       .match({ id: id });
     if (error) {
