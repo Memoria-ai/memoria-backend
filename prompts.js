@@ -1,5 +1,5 @@
 const axios = require("axios");
-const chatGPT_model = "gpt-3.5-turbo";
+const chatGPT_model = "gpt-3.5-turbo-16k";
 
 function configure_chatbot(notes) {
   let currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
@@ -133,6 +133,7 @@ async function catch_all(messages) {
 async function call_chatGPT(messages, max_tokens, temperature = 0) {
   // console.log("Calling chatGPT with the following prompt:");
   // console.log(messages);
+  
   const response = await axios
     .post(
       "https://api.openai.com/v1/chat/completions",

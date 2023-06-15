@@ -11,7 +11,7 @@ async function makeChatRequest(req, res) {
       const response = await axios.post(
         "https://api.openai.com/v1/chat/completions",
         {
-          model: "gpt-3.5-turbo",
+          model: "gpt-3.5-turbo-16k",
           messages: [{ role: "system", content: message }],
           max_tokens: max_tokens,
           n: 1,
@@ -43,7 +43,7 @@ async function makeChatRequestTemp(messages, tokens) {
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
-        model: "gpt-3.5-turbo",
+        model: "gpt-3.5-turbo-16k",
         messages: [{ role: "system", content: messages }],
         max_tokens: tokens,
         n: 1,
