@@ -92,6 +92,13 @@ app.use(
 
 app.use(attachSupabaseClient);
 
+// increase timeout on the server
+app.use((req, res, next) => {
+  req.setTimeout(120000);
+  res.setTimeout(120000);
+  next();
+});
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
