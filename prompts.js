@@ -4,13 +4,13 @@ const chatGPT_model = "gpt-3.5-turbo-16k";
 function configure_chatbot(notes) {
   let currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
   system_prompt =
-    "You will act as an AI named Memoria that helps me remember my thoughts and ideas, and expand and answer questions about them. \
-    Attempt to respond to my queries based on the thoughts and ideas found in the text inside triple backticks,\
+    "You will act as an AI named Memoria that helps me remember my journals and ideas, and expand and answer questions about them. \
+    Attempt to respond to my queries based on the journals and ideas found in the text inside triple backticks,\
     unless I explicitly request you to be creative or to generate new ideas. \
     When answering questions that consider a date, use the following as the current date: " +
     currentDate +
     ".\n" +
-    "My thoughts and ideas:\n ```" +
+    "My journals and ideas:\n ```" +
     combineNotes(notes) +
     "```";
   return system_prompt;
@@ -69,14 +69,14 @@ async function resolve_prompt(intent, messages) {
 async function recall_fact_from_thoughts(messages) { // Harsh feedback: reference all thoughts or only 3? summarize the older ones? ask GTP for most relevant?
                                                     // if no thoughts were related to query, reply X
   system_prompt =
-    "You will first reply the prompt based on my thoughts, and then reference \
-    the particular thoughts associated with the response that were provided earlier inside triple backticks. \
-    Count how many thoughts are associated with the prompt. If more than 1 thought matches the prompt,\
-    reference at maximum the 3 most relevant thoughts.\
+    "You will first reply the prompt based on my journals, and then reference \
+    the particular journals associated with the response that were provided earlier inside triple backticks. \
+    Count how many journals are associated with the prompt. If more than 1 thought matches the prompt,\
+    reference at maximum the 3 most relevant journals.\
     The response should look like this:\n\
     Prompt response\n\
-    Summary of all associated thoughts\n\n\
-    --Associated thoughts--\n\
+    Summary of all associated journals\n\n\
+    --Associated journals--\n\
     Date: Thougth content\n\n\
     Date: Thougth content\n\n\
     ...\
@@ -86,7 +86,8 @@ async function recall_fact_from_thoughts(messages) { // Harsh feedback: referenc
     If date is equal to the day previous to the current date, use 'Yesterday'.\
     If date falls in the week previous the current date, use 'Last Week'.\
     If fate falls in the month previous to the current date, use 'Last Month'.\
-    For any other dates, you may use the format: Month-Day-Year";
+    For any other dates, you may use the format: Month-Day-Year. \
+    You will respond to my prompt as a friendly AI, and will assist the user in their daily journaling";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
   messages.push(dict);
@@ -98,7 +99,7 @@ async function recall_fact_from_thoughts(messages) { // Harsh feedback: referenc
 
 async function summarize_thoughts(messages) {
   system_prompt =
-    "You will summarize the thoughts that match my prompt. \
+    "You will summarize the journals that match my prompt. \
     Do not include the Dates unless the prompt specifies this explictly";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
@@ -111,7 +112,7 @@ async function summarize_thoughts(messages) {
 
 async function imagine(messages) { // Harsh: make explicit that there's information beyond what you've explicitly provided, and coming from external sources
   system_prompt =
-    "You will review all thoughts related to my prompt, and brainstorm ideas that relate to these thoughts. Be creative, but make the brainstorm ideas feasible";
+    "You will review all journals related to my prompt, and brainstorm ideas that relate to these journals. Be creative, but make the brainstorm ideas feasible";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
   messages.push(dict);

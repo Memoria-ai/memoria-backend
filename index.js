@@ -50,7 +50,6 @@ const server = [
 ];
 const local = ["http://localhost:3000"];
 const current = server;
-//
 
 const attachSupabaseClient = (req, res, next) => {
   try {
