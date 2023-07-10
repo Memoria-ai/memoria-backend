@@ -2,14 +2,15 @@ const axios = require("axios");
 const chatGPT_model = "gpt-3.5-turbo-16k";
 
 function configure_chatbot(notes) {
-  let currentDate = new Date().toISOString().slice(0, 10); // this adds the date to the prompt as a reference
+  let currentDate = new Date().toLocaleDateString(); // this adds the date to the prompt as a reference
   system_prompt =
-    "You will act as an AI named Memoria that helps me remember my journals and ideas, and expand and answer questions about them. \
-    Attempt to respond to my queries based on the journals and ideas found in the text inside triple backticks,\
-    unless I explicitly request you to be creative or to generate new ideas. \
-    When answering questions that consider a date, use the following as the current date: " +
+    "You are an AI named Memoria that helps me reflect on my feelings, ideas, and thoughts using my journals entries, or expand and answer questions about them. \
+    Attempt to respond to my queries based only on the content found in the text inside triple backticks,\
+    unless I explicitly request you to be creative or to generate new ideas.\
+    Respond in a conversational, friendly and helpful manner.\
+   Today's date is: " +
     currentDate +
-    ".\n" +
+    " and you should account for the dates of the journals when answering.\n" +
     "My journals and ideas:\n ```" +
     combineNotes(notes) +
     "```";
@@ -18,16 +19,20 @@ function configure_chatbot(notes) {
 
 function combineNotes(notes) {
   let combinedString = "";
-  for (let note of notes) {
-    const dateOnlyString = new Date(note?.timestamp).toISOString().slice(0, 10); //toLocaleDateString() is better formatting IMO -mc
-    combinedString +=
-      "Thought Date: " +
-      dateOnlyString +
-      "\nThought content: " +
-      note?.content +
-      "\nThought Tags: " +
-      (note.tags ? note.tags.toString() : "") +
-      "\n\n";
+  if (notes.length > 0) {
+    for (let note of notes) {
+      const dateOnlyString = new Date(note?.timestamp).toLocaleDateString(); //toISOString().slice(0, 10); //toLocaleDateString() is better formatting IMO -mc
+      combinedString +=
+        "Journal Date: " +
+        dateOnlyString +
+        "\nJournal Content: " +
+        note?.content +
+        "\nJournal Tags: " +
+        (note.tags ? note.tags.toString() : "") +
+        "\n\n";
+    }
+  } else {
+    combinedString = "No Notes Available";
   }
   return combinedString.trim();
 }
@@ -66,8 +71,9 @@ async function resolve_prompt(intent, messages) {
 }
 
 // this is a direct pure recall, that may be based on a date or period of time - we don't expect the model to be creative, just to reply
-async function recall_fact_from_thoughts(messages) { // Harsh feedback: reference all thoughts or only 3? summarize the older ones? ask GTP for most relevant?
-                                                    // if no thoughts were related to query, reply X
+async function recall_fact_from_thoughts(messages) {
+  // Harsh feedback: reference all thoughts or only 3? summarize the older ones? ask GTP for most relevant?
+  // if no thoughts were related to query, reply X
   system_prompt =
     "You will first reply the prompt based on my journals, and then reference \
     the particular journals associated with the response that were provided earlier inside triple backticks. \
@@ -76,18 +82,16 @@ async function recall_fact_from_thoughts(messages) { // Harsh feedback: referenc
     The response should look like this:\n\
     Prompt response\n\
     Summary of all associated journals\n\n\
-    --Associated journals--\n\
-    Date: Thougth content\n\n\
-    Date: Thougth content\n\n\
-    ...\
-    Date: Thougth content\n\n\
-    When providing dates in your response, you will convert them based on these rules: \
+    Associated journals: n\
+    [Date] Thought content\n\n\
+    [Date] Thought content\n\n\
+    [Date] Thought content\n\n\
+    When providing dates in your response, provide them relative to the current date. For example: \
     If date is equal to the current date, use 'Today'.\
     If date is equal to the day previous to the current date, use 'Yesterday'.\
     If date falls in the week previous the current date, use 'Last Week'.\
     If fate falls in the month previous to the current date, use 'Last Month'.\
-    For any other dates, you may use the format: Month-Day-Year. \
-    You will respond to my prompt as a friendly AI, and will assist the user in their daily journaling";
+    For any other dates, you may use the format: Month-Day-Year.";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
   messages.push(dict);
@@ -99,8 +103,8 @@ async function recall_fact_from_thoughts(messages) { // Harsh feedback: referenc
 
 async function summarize_thoughts(messages) {
   system_prompt =
-    "You will summarize the journals that match my prompt. \
-    Do not include the Dates unless the prompt specifies this explictly";
+    "Summarize the journals that match my prompt. \
+    Do not include Dates unless the prompt requests it";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
   messages.push(dict);
@@ -110,7 +114,8 @@ async function summarize_thoughts(messages) {
   return response;
 }
 
-async function imagine(messages) { // Harsh: make explicit that there's information beyond what you've explicitly provided, and coming from external sources
+async function imagine(messages) {
+  // Harsh: make explicit that there's information beyond what you've explicitly provided, and coming from external sources
   system_prompt =
     "You will review all journals related to my prompt, and brainstorm ideas that relate to these journals. Be creative, but make the brainstorm ideas feasible";
   const dict = { role: "system", content: system_prompt };
@@ -134,7 +139,7 @@ async function catch_all(messages) {
 async function call_chatGPT(messages, max_tokens, temperature = 0) {
   // console.log("Calling chatGPT with the following prompt:");
   // console.log(messages);
-  
+
   const response = await axios
     .post(
       "https://api.openai.com/v1/chat/completions",
@@ -155,12 +160,15 @@ async function call_chatGPT(messages, max_tokens, temperature = 0) {
     .catch((error) => {
       console.error("Error:", error.response.data.error);
     });
-    if (response && response.data && response.data.choices && response.data.choices.length > 0) {
-      return response.data.choices[0].message.content;
-    }
-    return '';
-    
-  
+  if (
+    response &&
+    response.data &&
+    response.data.choices &&
+    response.data.choices.length > 0
+  ) {
+    return response.data.choices[0].message.content;
+  }
+  return "";
 }
 
 module.exports = {
