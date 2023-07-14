@@ -7,7 +7,7 @@ function configure_chatbot(notes) {
     "You are an AI named Memoria that helps me reflect on my feelings, ideas, and thoughts using my journals entries, or expand and answer questions about them. \
     Attempt to respond to my queries based only on the content found in the text inside triple backticks,\
     unless I explicitly request you to be creative or to generate new ideas.\
-    Respond in a conversational, friendly and helpful manner.\
+    Respond in a conversational, friendly and helpful manner and keep your responses very concise like a real conversation.\
    Today's date is: " +
     currentDate +
     " and you should account for the dates of the journals when answering.\n" +
@@ -38,7 +38,7 @@ function combineNotes(notes) {
 }
 
 async function identify_prompt_intent(user_prompt) {
-  const possible_intents = ["recall", "summarize", "imagine"];
+  const possible_intents = ["summarize", "imagine", "self-reflection"];
   prompt =
     "Using 1 word, identify the intent of the query found inside triple backticks. \
     Attempt to match the intent to the closest option from the following list: " +
@@ -57,12 +57,14 @@ async function identify_prompt_intent(user_prompt) {
 
 async function resolve_prompt(intent, messages) {
   switch (intent) {
-    case "recall":
-      return await recall_fact_from_thoughts(messages);
+    // case "fact-recall":
+    //   return await recall_fact_from_thoughts(messages);
     case "summarize":
       return await summarize_thoughts(messages);
     case "imagine":
       return await imagine(messages);
+    case "self-reflection":
+      return await reflect(messages);
     case "other":
       return await catch_all(messages);
     default:
@@ -75,10 +77,8 @@ async function recall_fact_from_thoughts(messages) {
   // Harsh feedback: reference all thoughts or only 3? summarize the older ones? ask GTP for most relevant?
   // if no thoughts were related to query, reply X
   system_prompt =
-    "You will first reply the prompt based on my journals, and then reference \
+    "You will first reply the prompt based on my journals, and then reference at most 3 of\
     the particular journals associated with the response that were provided earlier inside triple backticks. \
-    Count how many journals are associated with the prompt. If more than 1 thought matches the prompt,\
-    reference at maximum the 3 most relevant journals.\
     The response should look like this:\n\
     Prompt response\n\
     Summary of all associated journals\n\n\
@@ -91,7 +91,8 @@ async function recall_fact_from_thoughts(messages) {
     If date is equal to the day previous to the current date, use 'Yesterday'.\
     If date falls in the week previous the current date, use 'Last Week'.\
     If fate falls in the month previous to the current date, use 'Last Month'.\
-    For any other dates, you may use the format: Month-Day-Year.";
+    For any other dates, you may use the format: Month-Day-Year.\
+    DO NOT SAY 'Based on your journals' OR SIMILAR PHRASES";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
   messages.push(dict);
@@ -101,23 +102,41 @@ async function recall_fact_from_thoughts(messages) {
   return response;
 }
 
-async function summarize_thoughts(messages) {
+async function reflect(messages) {
   system_prompt =
-    "Summarize the journals that match my prompt. \
-    Do not include Dates unless the prompt requests it";
+    "Respond to my prompt using my journals as context. I want to understand \
+    myself on a deeper level, and have my question answer. I want to continue \
+    this conversation so create an opportunity for me to ask a follow up question.\
+    Count the words in your response and keep response less than 300 words.\
+    DO NOT SAY 'Based on your journals' OR SIMILAR PHRASES";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
   messages.push(dict);
   messages.push(temp);
   // console.log("Calling summarize_thoughts");
-  response = await call_chatGPT(messages, 2000, 0);
+  response = await call_chatGPT(messages, 1500, 0);
+  return response;
+}
+
+async function summarize_thoughts(messages) {
+  system_prompt =
+    "Summarize the journals that match my prompt. \
+    Do not include Dates unless the prompt requests it.\
+    DO NOT SAY 'Based on your journals' OR SIMILAR PHRASES";
+  const dict = { role: "system", content: system_prompt };
+  const temp = messages.pop();
+  messages.push(dict);
+  messages.push(temp);
+  // console.log("Calling summarize_thoughts");
+  response = await call_chatGPT(messages, 1500, 0);
   return response;
 }
 
 async function imagine(messages) {
   // Harsh: make explicit that there's information beyond what you've explicitly provided, and coming from external sources
   system_prompt =
-    "You will review all journals related to my prompt, and brainstorm ideas that relate to these journals. Be creative, but make the brainstorm ideas feasible";
+    "You will review all journals related to my prompt, and brainstorm ideas that relate to these journals. Be creative, but make the brainstorm ideas feasible\
+    DO NOT SAY 'Based on your journals' OR SIMILAR PHRASES";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
   messages.push(dict);
@@ -130,7 +149,7 @@ async function imagine(messages) {
 // this is the catch all response to prompts, use high temp to make the model be creative
 async function catch_all(messages) {
   // console.log("Calling catch_all");
-  response = await call_chatGPT(messages, 2000, 0.2);
+  response = await call_chatGPT(messages, 1500, 0.2);
   return response;
 }
 

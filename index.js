@@ -285,6 +285,7 @@ app.post(
     let system_message = configure_chatbot(notes);
     let last_prompt = messages[messages.length - 1].text;
     let prompt_intent = await identify_prompt_intent(last_prompt);
+    // console.log(prompt_intent);
 
     let processed_messages = [];
     for (let i = 0; i < messages.length; i++) {
