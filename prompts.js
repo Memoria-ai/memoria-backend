@@ -3,17 +3,24 @@ const chatGPT_model = "gpt-3.5-turbo-16k";
 
 function configure_chatbot(notes) {
   let currentDate = new Date().toLocaleDateString(); // this adds the date to the prompt as a reference
-  system_prompt =
-    "You are an AI named Memoria that helps me reflect on my feelings, ideas, and thoughts using my journals entries, or expand and answer questions about them. \
+  if (notes?.length == 0) {
+    system_prompt =
+      "You are an AI named Memoria that helps me reflect on my feelings, ideas, and thoughts, and to expand and answer questions about them. \
+    Attempt to respond to my queries in a conversational, friendly and helpful manner and keep your responses very concise like a real conversation. Begin your response with something like: \
+    'It's hard to respond accurately without you journalling, but...' then go on to respond.";
+  } else {
+    system_prompt =
+      "You are an AI named Memoria that helps me reflect on my feelings, ideas, and thoughts using my journals entries, or expand and answer questions about them. \
     Attempt to respond to my queries based only on the content found in the text inside triple backticks,\
     unless I explicitly request you to be creative or to generate new ideas.\
     Respond in a conversational, friendly and helpful manner and keep your responses very concise like a real conversation.\
    Today's date is: " +
-    currentDate +
-    " and you should account for the dates of the journals when answering.\n" +
-    "My journals and ideas:\n ```" +
-    combineNotes(notes) +
-    "```";
+      currentDate +
+      " and you should account for the dates of the journals when answering.\n" +
+      "My journals and ideas:\n ```" +
+      combineNotes(notes) +
+      "```";
+  }
   return system_prompt;
 }
 
@@ -108,6 +115,7 @@ async function reflect(messages) {
     myself on a deeper level, and have my question answer. I want to continue \
     this conversation so create an opportunity for me to ask a follow up question.\
     Count the words in your response and keep response less than 300 words.\
+    If you need more information to answer my question effectively, ask me.\
     DO NOT SAY 'Based on your journals' OR SIMILAR PHRASES";
   const dict = { role: "system", content: system_prompt };
   const temp = messages.pop();
